@@ -1,0 +1,88 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{81B3BFFD-214F-472E-B779-17999E9DB682}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BuildingBlocks", "BuildingBlocks", "{94100BD3-B865-4C40-9503-C33F3F517A69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.Common", "src\BuildingBlocks\Sigortak.Common\Sigortak.Common.csproj", "{226F0F40-CFDC-45EB-9B62-65A35A5E4B26}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.CQRS", "src\BuildingBlocks\Sigortak.CQRS\Sigortak.CQRS.csproj", "{98EEEA4C-FEEF-414E-B507-D7397D997890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.EventBus", "src\BuildingBlocks\Sigortak.EventBus\Sigortak.EventBus.csproj", "{903717CA-B2DC-4638-BA60-A8AA28A729A4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{A06563D1-75F0-470B-BB40-F28C462A8EDF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Identity", "Identity", "{CBCC6424-EA81-4621-A71C-0460C3369855}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.Identity.Domain", "src\Services\Identity\Sigortak.Identity.Domain\Sigortak.Identity.Domain.csproj", "{E05E3785-906C-468C-B831-BEC3B068EF36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.Identity.Application", "src\Services\Identity\Sigortak.Identity.Application\Sigortak.Identity.Application.csproj", "{F5274055-DE9D-4093-8A3A-D62EDC102571}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.Identity.Infrastructure", "src\Services\Identity\Sigortak.Identity.Infrastructure\Sigortak.Identity.Infrastructure.csproj", "{FC0936CC-49BF-4D35-83CB-D30968B1B103}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.Identity.API", "src\Services\Identity\Sigortak.Identity.API\Sigortak.Identity.API.csproj", "{94B09A2E-8B79-4D0F-B9BD-36066397E589}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ApiGateway", "ApiGateway", "{8A071766-5782-4C20-A3E9-B40A268DC5AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sigortak.Gateway", "src\ApiGateway\Sigortak.Gateway\Sigortak.Gateway.csproj", "{42187F89-4E3C-464A-8B26-042DE73970E5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{226F0F40-CFDC-45EB-9B62-65A35A5E4B26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{226F0F40-CFDC-45EB-9B62-65A35A5E4B26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{226F0F40-CFDC-45EB-9B62-65A35A5E4B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{226F0F40-CFDC-45EB-9B62-65A35A5E4B26}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98EEEA4C-FEEF-414E-B507-D7397D997890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98EEEA4C-FEEF-414E-B507-D7397D997890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98EEEA4C-FEEF-414E-B507-D7397D997890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98EEEA4C-FEEF-414E-B507-D7397D997890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{903717CA-B2DC-4638-BA60-A8AA28A729A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{903717CA-B2DC-4638-BA60-A8AA28A729A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{903717CA-B2DC-4638-BA60-A8AA28A729A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{903717CA-B2DC-4638-BA60-A8AA28A729A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E05E3785-906C-468C-B831-BEC3B068EF36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E05E3785-906C-468C-B831-BEC3B068EF36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E05E3785-906C-468C-B831-BEC3B068EF36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E05E3785-906C-468C-B831-BEC3B068EF36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F5274055-DE9D-4093-8A3A-D62EDC102571}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5274055-DE9D-4093-8A3A-D62EDC102571}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5274055-DE9D-4093-8A3A-D62EDC102571}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5274055-DE9D-4093-8A3A-D62EDC102571}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC0936CC-49BF-4D35-83CB-D30968B1B103}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC0936CC-49BF-4D35-83CB-D30968B1B103}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC0936CC-49BF-4D35-83CB-D30968B1B103}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC0936CC-49BF-4D35-83CB-D30968B1B103}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94B09A2E-8B79-4D0F-B9BD-36066397E589}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94B09A2E-8B79-4D0F-B9BD-36066397E589}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94B09A2E-8B79-4D0F-B9BD-36066397E589}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94B09A2E-8B79-4D0F-B9BD-36066397E589}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42187F89-4E3C-464A-8B26-042DE73970E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42187F89-4E3C-464A-8B26-042DE73970E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42187F89-4E3C-464A-8B26-042DE73970E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42187F89-4E3C-464A-8B26-042DE73970E5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{94100BD3-B865-4C40-9503-C33F3F517A69} = {81B3BFFD-214F-472E-B779-17999E9DB682}
+		{226F0F40-CFDC-45EB-9B62-65A35A5E4B26} = {94100BD3-B865-4C40-9503-C33F3F517A69}
+		{98EEEA4C-FEEF-414E-B507-D7397D997890} = {94100BD3-B865-4C40-9503-C33F3F517A69}
+		{903717CA-B2DC-4638-BA60-A8AA28A729A4} = {94100BD3-B865-4C40-9503-C33F3F517A69}
+		{A06563D1-75F0-470B-BB40-F28C462A8EDF} = {81B3BFFD-214F-472E-B779-17999E9DB682}
+		{CBCC6424-EA81-4621-A71C-0460C3369855} = {A06563D1-75F0-470B-BB40-F28C462A8EDF}
+		{E05E3785-906C-468C-B831-BEC3B068EF36} = {CBCC6424-EA81-4621-A71C-0460C3369855}
+		{F5274055-DE9D-4093-8A3A-D62EDC102571} = {CBCC6424-EA81-4621-A71C-0460C3369855}
+		{FC0936CC-49BF-4D35-83CB-D30968B1B103} = {CBCC6424-EA81-4621-A71C-0460C3369855}
+		{94B09A2E-8B79-4D0F-B9BD-36066397E589} = {CBCC6424-EA81-4621-A71C-0460C3369855}
+		{8A071766-5782-4C20-A3E9-B40A268DC5AF} = {81B3BFFD-214F-472E-B779-17999E9DB682}
+		{42187F89-4E3C-464A-8B26-042DE73970E5} = {8A071766-5782-4C20-A3E9-B40A268DC5AF}
+	EndGlobalSection
+EndGlobal

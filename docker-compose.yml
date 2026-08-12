@@ -1,0 +1,201 @@
+services:
+  # ============================================
+  # WRITE DATABASE — PostgreSQL 16
+  # ============================================
+  postgres-write:
+    image: postgres:16-alpine
+    container_name: sigortak-postgres-write
+    environment:
+      POSTGRES_DB: ${POSTGRES_WRITE_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-write-data:/var/lib/postgresql/data
+    networks:
+      - sigortak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_WRITE_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # READ DATABASE — PostgreSQL 16 (Read Model)
+  # ============================================
+  postgres-read:
+    image: postgres:16-alpine
+    container_name: sigortak-postgres-read
+    environment:
+      POSTGRES_DB: ${POSTGRES_READ_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-read-data:/var/lib/postgresql/data
+    networks:
+      - sigortak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_READ_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # CACHE — Redis 7
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: sigortak-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - sigortak-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # MESSAGE BROKER — RabbitMQ 3 (Management UI)
+  # ============================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: sigortak-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: sigortak
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - sigortak-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # EVENT STREAMING — Apache Kafka (KRaft Mode)
+  # ============================================
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: sigortak-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,HOST://localhost:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - sigortak-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ============================================
+  # KAFKA UI — Topic Monitoring
+  # ============================================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: sigortak-kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: sigortak-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    ports:
+      - "8090:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # OBJECT STORAGE — MinIO (S3-Compatible)
+  # ============================================
+  minio:
+    image: minio/minio:latest
+    container_name: sigortak-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - sigortak-network
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # DB ADMIN — pgAdmin 4
+  # ============================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sigortak-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      postgres-read:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+volumes:
+  postgres-write-data:
+  postgres-read-data:
+  redis-data:
+  rabbitmq-data:
+  kafka-data:
+  minio-data:
+  pgadmin-data:
+
+networks:
+  sigortak-network:
+    driver: bridge

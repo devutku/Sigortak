@@ -1,0 +1,29 @@
+# ============================================
+# Sigortak API Gateway — Multi-stage Dockerfile
+# ============================================
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+WORKDIR /app
+EXPOSE 5000
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+WORKDIR /src
+
+COPY ["src/ApiGateway/Sigortak.Gateway/Sigortak.Gateway.csproj", "ApiGateway/Sigortak.Gateway/"]
+RUN dotnet restore "ApiGateway/Sigortak.Gateway/Sigortak.Gateway.csproj"
+
+COPY src/ .
+
+WORKDIR "/src/ApiGateway/Sigortak.Gateway"
+RUN dotnet build -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+RUN adduser -D -h /app appuser
+USER appuser
+
+ENTRYPOINT ["dotnet", "Sigortak.Gateway.dll"]
