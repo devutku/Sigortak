@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Sigortak.Common.Models;
 using Sigortak.CQRS.Commands;
 using Sigortak.Identity.Application.DTOs;
@@ -10,5 +11,5 @@ namespace Sigortak.Identity.Application.Commands.Login;
 public record LoginCommand(
     string Username,
     string Password,
-    string IpAddress = "unknown"
+    [property: JsonIgnore] string IpAddress = "unknown"
 ) : ICommand<Result<AuthResponseDto>>;

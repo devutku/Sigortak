@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Sigortak.Common.Models;
 using Sigortak.CQRS.Commands;
 using Sigortak.Identity.Application.DTOs;
@@ -9,5 +10,5 @@ namespace Sigortak.Identity.Application.Commands.RefreshToken;
 /// </summary>
 public record RefreshTokenCommand(
     string Token,
-    string IpAddress = "unknown"
+    [property: JsonIgnore] string IpAddress = "unknown"
 ) : ICommand<Result<AuthResponseDto>>;
