@@ -54,7 +54,7 @@ public class UserRepository : IUserRepository
 
     public async Task UpdateAsync(User user, CancellationToken cancellationToken = default)
     {
-        _context.Users.Update(user);
+        // Entity zaten track edildiği için Update() çağırmaya gerek yoktur, sadece SaveChanges yeterlidir.
         await _context.SaveChangesAsync(cancellationToken);
     }
 

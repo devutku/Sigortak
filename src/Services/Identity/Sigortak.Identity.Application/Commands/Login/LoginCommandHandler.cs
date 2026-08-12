@@ -40,12 +40,11 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<AuthResp
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new BusinessException("Kullanıcı adı veya şifre hatalı.");
 
-        // Eski refresh token'ları devre dışı bırak
-        foreach (var existingToken in user.RefreshTokens.Where(t => t.IsActive))
+        // Eski aktif refresh token'ları temizle
+        var activeTokens = user.RefreshTokens.Where(t => t.IsActive).ToList();
+        foreach (var existingToken in activeTokens)
         {
-            existingToken.RevokedAt = DateTime.UtcNow;
-            existingToken.RevokedByIp = request.IpAddress;
-            existingToken.ReasonRevoked = "Yeni giriş yapıldı";
+            user.RefreshTokens.Remove(existingToken);
         }
 
         // Yeni refresh token oluştur
@@ -54,8 +53,8 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<AuthResp
         user.RefreshTokens.Add(refreshToken);
 
         // Son giriş tarihini güncelle
-        user.LastLoginAt = DateTime.UtcNow;
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        // user.LastLoginAt = DateTime.UtcNow;
+        // await _userRepository.UpdateAsync(user, cancellationToken);
 
         // JWT access token üret
         var accessToken = _jwtTokenService.GenerateAccessToken(user);

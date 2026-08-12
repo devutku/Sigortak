@@ -1,0 +1,6 @@
+@Sigortak.Vehicle.API_HostAddress = http://localhost:5173
+
+GET {{Sigortak.Vehicle.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
