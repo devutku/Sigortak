@@ -10,17 +10,17 @@ namespace Sigortak.Vehicle.Application.Queries.GetVehicles;
 
 public class GetVehiclesQueryHandler : IRequestHandler<GetVehiclesQuery, Result<List<VehicleDto>>>
 {
-    private readonly IVehicleRepository _vehicleRepository;
+    private readonly IVehiclePolicyReadRepository _readRepository;
     private readonly IDatabase _redisDatabase;
     private readonly ILogger<GetVehiclesQueryHandler> _logger;
     private const string CacheKey = "vehicles:all";
 
     public GetVehiclesQueryHandler(
-        IVehicleRepository vehicleRepository,
+        IVehiclePolicyReadRepository readRepository,
         IConnectionMultiplexer redisConnection,
         ILogger<GetVehiclesQueryHandler> logger)
     {
-        _vehicleRepository = vehicleRepository;
+        _readRepository = readRepository;
         _redisDatabase = redisConnection.GetDatabase();
         _logger = logger;
     }
@@ -42,22 +42,31 @@ public class GetVehiclesQueryHandler : IRequestHandler<GetVehiclesQuery, Result<
             _logger.LogError(ex, "Redis cache okuma hatası.");
         }
 
-        _logger.LogInformation("Araç listesi veritabanından çekiliyor.");
-        var dbVehicles = await _vehicleRepository.GetAllAsync(cancellationToken);
+        _logger.LogInformation("Araç listesi Read veritabanından çekiliyor.");
+        var dbVehicles = await _readRepository.GetAllAsync(cancellationToken);
         var dtos = dbVehicles.Select(v => new VehicleDto
         {
-            Id = v.Id,
+            Id = v.VehicleId,
             Plate = v.Plate,
             Brand = v.Brand,
             Model = v.Model,
             Year = v.Year,
-            EngineNumber = v.EngineNumber,
-            ChassisNumber = v.ChassisNumber,
             OwnerId = v.OwnerId,
-            BodyType = v.BodyType.ToString(),
-            IsActive = v.IsActive,
-            CreatedAt = v.CreatedAt,
-            UpdatedAt = v.UpdatedAt
+            OwnerName = v.OwnerName,
+            BodyType = v.BodyType,
+            EngineCapacity = v.EngineCapacity,
+            ChassisNumber = v.ChassisNumber,
+            RegistrationNumber = v.RegistrationNumber,
+            InspectionDate = v.InspectionDate,
+            InsuranceEndDate = v.EndDate,
+            PolicyId = v.PolicyId,
+            PolicyNumber = v.PolicyNumber,
+            PolicyStartDate = v.StartDate,
+            PolicyEndDate = v.EndDate,
+            PolicyPremium = v.Premium,
+            PolicyDocumentUrl = v.DocumentUrl,
+            IsActive = true,
+            CreatedAt = v.UpdatedAt
         }).ToList();
 
         try

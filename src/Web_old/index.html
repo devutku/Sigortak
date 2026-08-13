@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigortak - Güvenli Araç ve Muayene Takip</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen" class="splash-container">
+        <div class="splash-content">
+            <div class="accident-scene">
+                <i class="fa-solid fa-car car-actor"></i>
+                <i class="fa-solid fa-burst burst-effect hidden"></i>
+                <i class="fa-solid fa-circle-exclamation barrier-actor"></i>
+            </div>
+            <h1 class="splash-title">Sigortak</h1>
+            <p class="splash-subtitle">Kaza Geliyorum Der, SigorTAK diye Korur...</p>
+        </div>
+    </div>
+
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-container hidden">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fa-solid fa-car-burst"></i>
+                    <span>Sigortak</span>
+                </div>
+                <p>Güvenli Araç ve Muayene Takip Sistemi</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginUsername">Kullanıcı Adı</label>
+                    <input type="text" id="loginUsername" required placeholder="Kullanıcı adınızı girin">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Şifre</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <div id="loginError" class="login-error hidden"></div>
+                <button type="submit" class="btn btn-login">Giriş Yap</button>
+            </form>
+            <div class="login-footer">
+                <p>Demo hesabı: <span>docker_user / Password123!</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER (Arayüz Paneli) -->
+    <div id="appContainer" class="app-container hidden">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-car-burst"></i>
+                    <span>Sigortak</span>
+                </div>
+                <div class="subtitle-wrapper">
+                    <span class="subtitle">Araç Yönetim Paneli</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+                <div class="menu-label">Ana Menü</div>
+                <a href="#" class="menu-item"><i class="fa-solid fa-chart-line"></i> Kontrol Paneli</a>
+
+                <div class="menu-label">Müşteriler</div>
+                <a href="#" class="menu-item"><i class="fa-solid fa-users"></i> Müşteriler</a>
+
+                <div class="menu-label">Servis</div>
+                <a href="#" class="menu-item active"><i class="fa-solid fa-car"></i> Araçlarım</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-sliders"></i> Filo Yönetimi</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-bell"></i> Hatırlatmalar</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-file-invoice"></i> İş Emirleri</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-file-shield"></i> Araç Muayenelerim</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-calendar-days"></i> Takvim</a>
+
+                <div class="menu-label">İşlemler</div>
+                <a href="#" class="menu-item"><i class="fa-solid fa-receipt"></i> Teklifler</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-credit-card"></i> Fatura</a>
+            </nav>
+
+            <!-- Çıkış Yap Butonu -->
+            <div class="sidebar-footer" style="margin-top: auto; padding-top: 20px;">
+                <a href="#" class="menu-item" onclick="handleLogout()"
+                    style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"><i
+                        class="fa-solid fa-right-from-bracket" style="color: #ef4444;"></i> Çıkış Yap</a>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <header class="header">
+                <div class="breadcrumb">
+                    <i class="fa-solid fa-sidebar-toggle sidebar-trigger"></i>
+                    <span>Araçlarım</span>
+                    <i class="fa-solid fa-chevron-right separator"></i>
+                    <span class="active">Tüm Araçlar</span>
+                </div>
+
+                <div class="header-right">
+                    <!-- Exchange Rates -->
+                    <div class="rates">
+                        <div class="rate-item">
+                            <span class="rate-label">$ USD</span>
+                            <span class="rate-value"><span id="usd-rate">₺...</span> <i class="fa-solid fa-caret-up text-success"></i></span>
+                        </div>
+                        <div class="rate-item">
+                            <span class="rate-label">€ EUR</span>
+                            <span class="rate-value"><span id="eur-rate">₺...</span> <i class="fa-solid fa-caret-up text-success"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="global-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="globalSearchInput" placeholder="Ara... (Ctrl+K)">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="openAddVehicleModal()">+ Ekle</button>
+                </div>
+            </header>
+
+            <!-- FILTERS & ACTIONS -->
+            <section class="action-bar">
+                <div class="filter-tabs">
+                    <button class="tab-btn active">Aktif</button>
+                    <button class="tab-btn">Arşivlenmiş</button>
+                </div>
+
+                <div class="search-and-buttons">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="vehicleFilterInput"
+                            placeholder="Plaka, marka, model, Şase No ile ara...">
+                    </div>
+
+                    <div class="view-modes">
+                        <button class="view-btn active"><i class="fa-solid fa-list"></i></button>
+                        <button class="view-btn"><i class="fa-solid fa-grip"></i></button>
+                        <button class="view-btn"><i class="fa-solid fa-table-cells"></i></button>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="openAddVehicleModal()">+ Araç Ekle</button>
+                </div>
+            </section>
+
+            <!-- VEHICLES TABLE -->
+            <section class="table-container">
+                <table class="vehicles-table" id="vehiclesTable">
+                    <thead>
+                        <tr>
+                            <th>Plaka</th>
+                            <th>Araç Bilgisi</th>
+                            <th>Muayene Kalan Gün</th>
+                            <th>Muayene Durumu</th>
+                            <th>Sigorta Durumu</th>
+                            <th>Kasa Tipi</th>
+                            <th style="width: 50px;">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehiclesTableBody">
+                        <tr class="loading-row">
+                            <td colspan="7">Araç listesi yükleniyor...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- INSTALL APP BANNER -->
+            <div class="install-banner">
+                <div class="banner-left">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <div>
+                        <span class="banner-title">Sigortak'ı Yükle</span>
+                        <span class="banner-desc">Hızlı erişim için ana ekranınıza ekleyin</span>
+                    </div>
+                </div>
+                <div class="banner-right">
+                    <button class="btn btn-banner">Yükle</button>
+                    <i class="fa-solid fa-xmark banner-close"></i>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ADD VEHICLE MODAL -->
+    <div class="modal-overlay" id="addVehicleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Yeni Araç Ekle</h2>
+                <i class="fa-solid fa-xmark modal-close" onclick="closeAddVehicleModal()"></i>
+            </div>
+            <form id="addVehicleForm" onsubmit="handleFormSubmit(event)">
+                <div class="form-group">
+                    <label for="plate">Plaka</label>
+                    <input type="text" id="plate" required placeholder="Örn: 34XYZ789">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="brand">Marka</label>
+                        <input type="text" id="brand" required placeholder="Örn: Audi">
+                    </div>
+                    <div class="form-group">
+                        <label for="model">Model</label>
+                        <input type="text" id="model" required placeholder="Örn: A6">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="year">Yıl</label>
+                        <input type="number" id="year" required placeholder="Örn: 2025" min="1900" max="2030">
+                    </div>
+                    <div class="form-group">
+                        <label for="bodyType">Kasa Tipi</label>
+                        <select id="bodyType">
+                            <option value="1">Sedan</option>
+                            <option value="2">OffRoad</option>
+                            <option value="3">Hatchback</option>
+                            <option value="4">Pickup</option>
+                            <option value="5">Van</option>
+                            <option value="6">Sport</option>
+                            <option value="10">SUV</option>
+                            <option value="11">Wagon</option>
+                            <option value="14">Cabriolet</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="engineNumber">Motor No</label>
+                        <input type="text" id="engineNumber" placeholder="Örn: ENG123">
+                    </div>
+                    <div class="form-group">
+                        <label for="chassisNumber">Şase No</label>
+                        <input type="text" id="chassisNumber" placeholder="Örn: CHS456">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="inspectionDate">Son Muayene Tarihi</label>
+                        <input type="date" id="inspectionDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="insuranceEndDate">Sigorta Bitiş Tarihi</label>
+                        <input type="date" id="insuranceEndDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ownerId">Müşteri ID (Owner GUID)</label>
+                    <input type="text" id="ownerId" value="713624da-8eb0-4b12-bc76-7fef4a59e1a9" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cancel" onclick="closeAddVehicleModal()">Vazgeç</button>
+                    <button type="submit" class="btn btn-save">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

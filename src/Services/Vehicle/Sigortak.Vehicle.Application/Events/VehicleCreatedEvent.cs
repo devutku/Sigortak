@@ -15,8 +15,10 @@ public class VehicleCreatedEvent : IntegrationEvent
     public int Year { get; }
     public Guid OwnerId { get; }
     public VehicleBodyType BodyType { get; }
+    public DateTime? InspectionDate { get; }
+    public DateTime? InsuranceEndDate { get; }
 
-    public VehicleCreatedEvent(Guid vehicleId, string plate, string brand, string model, int year, Guid ownerId, VehicleBodyType bodyType)
+    public VehicleCreatedEvent(Guid vehicleId, string plate, string brand, string model, int year, Guid ownerId, VehicleBodyType bodyType, DateTime? inspectionDate, DateTime? insuranceEndDate)
     {
         VehicleId = vehicleId;
         Plate = plate;
@@ -25,5 +27,7 @@ public class VehicleCreatedEvent : IntegrationEvent
         Year = year;
         OwnerId = ownerId;
         BodyType = bodyType;
+        InspectionDate = inspectionDate;
+        InsuranceEndDate = insuranceEndDate;
     }
 }

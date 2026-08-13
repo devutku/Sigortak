@@ -1,39 +1,22 @@
-# ============================================
-# Sigortak Identity API — Multi-stage Dockerfile
-# ============================================
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
-EXPOSE 5001
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
-WORKDIR /src
+# Tüm projeleri derlemek için solution seviyesinde kopyalama yapıyoruz
+COPY Sigortak.sln ./
+COPY src/BuildingBlocks/Sigortak.Common/Sigortak.Common.csproj src/BuildingBlocks/Sigortak.Common/
+COPY src/BuildingBlocks/Sigortak.CQRS/Sigortak.CQRS.csproj src/BuildingBlocks/Sigortak.CQRS/
+COPY src/BuildingBlocks/Sigortak.EventBus/Sigortak.EventBus.csproj src/BuildingBlocks/Sigortak.EventBus/
+COPY src/Services/Identity/Sigortak.Identity.Domain/Sigortak.Identity.Domain.csproj src/Services/Identity/Sigortak.Identity.Domain/
+COPY src/Services/Identity/Sigortak.Identity.Application/Sigortak.Identity.Application.csproj src/Services/Identity/Sigortak.Identity.Application/
+COPY src/Services/Identity/Sigortak.Identity.Infrastructure/Sigortak.Identity.Infrastructure.csproj src/Services/Identity/Sigortak.Identity.Infrastructure/
+COPY src/Services/Identity/Sigortak.Identity.API/Sigortak.Identity.API.csproj src/Services/Identity/Sigortak.Identity.API/
 
-# Proje dosyalarını kopyala (layer cache)
-COPY ["src/BuildingBlocks/Sigortak.Common/Sigortak.Common.csproj", "BuildingBlocks/Sigortak.Common/"]
-COPY ["src/BuildingBlocks/Sigortak.CQRS/Sigortak.CQRS.csproj", "BuildingBlocks/Sigortak.CQRS/"]
-COPY ["src/BuildingBlocks/Sigortak.EventBus/Sigortak.EventBus.csproj", "BuildingBlocks/Sigortak.EventBus/"]
-COPY ["src/Services/Identity/Sigortak.Identity.Domain/Sigortak.Identity.Domain.csproj", "Services/Identity/Sigortak.Identity.Domain/"]
-COPY ["src/Services/Identity/Sigortak.Identity.Application/Sigortak.Identity.Application.csproj", "Services/Identity/Sigortak.Identity.Application/"]
-COPY ["src/Services/Identity/Sigortak.Identity.Infrastructure/Sigortak.Identity.Infrastructure.csproj", "Services/Identity/Sigortak.Identity.Infrastructure/"]
-COPY ["src/Services/Identity/Sigortak.Identity.API/Sigortak.Identity.API.csproj", "Services/Identity/Sigortak.Identity.API/"]
+RUN dotnet restore src/Services/Identity/Sigortak.Identity.API/Sigortak.Identity.API.csproj
 
-RUN dotnet restore "Services/Identity/Sigortak.Identity.API/Sigortak.Identity.API.csproj"
+COPY . .
+RUN dotnet publish src/Services/Identity/Sigortak.Identity.API/Sigortak.Identity.API.csproj -c Release -o /out
 
-# Tüm kaynak kodunu kopyala
-COPY src/ .
-
-WORKDIR "/src/Services/Identity/Sigortak.Identity.API"
-RUN dotnet build -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
-
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-COPY --from=publish /app/publish .
-
-# Non-root kullanıcı (güvenlik)
-RUN adduser -D -h /app appuser
-USER appuser
-
+COPY --from=build /out .
 ENTRYPOINT ["dotnet", "Sigortak.Identity.API.dll"]

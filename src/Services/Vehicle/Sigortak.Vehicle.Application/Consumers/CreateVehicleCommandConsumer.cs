@@ -100,9 +100,14 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         Model = command.Model,
                         Year = command.Year,
                         EngineNumber = command.EngineNumber,
+                        EngineCapacity = command.EngineCapacity,
                         ChassisNumber = command.ChassisNumber,
+                        RegistrationNumber = command.RegistrationNumber,
                         OwnerId = command.OwnerId,
+                        OwnerName = command.OwnerName,
                         BodyType = command.BodyType,
+                        InspectionDate = command.InspectionDate,
+                        InsuranceEndDate = command.InsuranceEndDate,
                         IsActive = true
                     };
 
@@ -117,7 +122,9 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         vehicle.Model,
                         vehicle.Year,
                         vehicle.OwnerId,
-                        vehicle.BodyType
+                        vehicle.BodyType,
+                        vehicle.InspectionDate,
+                        vehicle.InsuranceEndDate
                     );
 
                     await kafkaEventBus.PublishAsync(syncEvent, stoppingToken);

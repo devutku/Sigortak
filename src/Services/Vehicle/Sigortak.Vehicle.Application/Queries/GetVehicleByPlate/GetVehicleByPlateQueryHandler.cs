@@ -11,16 +11,16 @@ namespace Sigortak.Vehicle.Application.Queries.GetVehicleByPlate;
 
 public class GetVehicleByPlateQueryHandler : IRequestHandler<GetVehicleByPlateQuery, Result<VehicleDto>>
 {
-    private readonly IVehicleRepository _vehicleRepository;
+    private readonly IVehiclePolicyReadRepository _readRepository;
     private readonly IDatabase _redisDatabase;
     private readonly ILogger<GetVehicleByPlateQueryHandler> _logger;
 
     public GetVehicleByPlateQueryHandler(
-        IVehicleRepository vehicleRepository,
+        IVehiclePolicyReadRepository readRepository,
         IConnectionMultiplexer redisConnection,
         ILogger<GetVehicleByPlateQueryHandler> logger)
     {
-        _vehicleRepository = vehicleRepository;
+        _readRepository = readRepository;
         _redisDatabase = redisConnection.GetDatabase();
         _logger = logger;
     }
@@ -44,25 +44,30 @@ public class GetVehicleByPlateQueryHandler : IRequestHandler<GetVehicleByPlateQu
             _logger.LogError(ex, "Redis cache okuma hatası.");
         }
 
-        _logger.LogInformation("Araç ({Plate}) veritabanından çekiliyor.", request.Plate);
-        var dbVehicle = await _vehicleRepository.GetByPlateAsync(request.Plate, cancellationToken);
+        _logger.LogInformation("Araç ({Plate}) Read veritabanından çekiliyor.", request.Plate);
+        var dbVehicle = await _readRepository.GetByPlateAsync(request.Plate, cancellationToken);
         if (dbVehicle == null)
             throw new NotFoundException("Vehicle", request.Plate);
 
         var dto = new VehicleDto
         {
-            Id = dbVehicle.Id,
+            Id = dbVehicle.VehicleId,
             Plate = dbVehicle.Plate,
             Brand = dbVehicle.Brand,
             Model = dbVehicle.Model,
             Year = dbVehicle.Year,
-            EngineNumber = dbVehicle.EngineNumber,
-            ChassisNumber = dbVehicle.ChassisNumber,
             OwnerId = dbVehicle.OwnerId,
-            BodyType = dbVehicle.BodyType.ToString(),
-            IsActive = dbVehicle.IsActive,
-            CreatedAt = dbVehicle.CreatedAt,
-            UpdatedAt = dbVehicle.UpdatedAt
+            BodyType = dbVehicle.BodyType,
+            InspectionDate = dbVehicle.InspectionDate,
+            InsuranceEndDate = dbVehicle.EndDate,
+            PolicyId = dbVehicle.PolicyId,
+            PolicyNumber = dbVehicle.PolicyNumber,
+            PolicyStartDate = dbVehicle.StartDate,
+            PolicyEndDate = dbVehicle.EndDate,
+            PolicyPremium = dbVehicle.Premium,
+            PolicyDocumentUrl = dbVehicle.DocumentUrl,
+            IsActive = true,
+            CreatedAt = dbVehicle.UpdatedAt
         };
 
         try

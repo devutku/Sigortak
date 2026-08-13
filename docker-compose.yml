@@ -187,6 +187,100 @@ services:
       - sigortak-network
     restart: unless-stopped
 
+  # ============================================
+  # SERVICES — Identity API
+  # ============================================
+  identity-api:
+    build:
+      context: .
+      dockerfile: src/Services/Identity/Sigortak.Identity.API/Dockerfile
+    container_name: sigortak-identity-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__ReadDb=Host=postgres-read;Port=5432;Database=sigortak_read_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
+      - RabbitMq__HostName=rabbitmq
+      - RabbitMq__UserName=${RABBITMQ_USER}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - RabbitMq__VirtualHost=sigortak
+      - RabbitMq__Port=5672
+      - EventBus__HostName=rabbitmq
+      - EventBus__UserName=${RABBITMQ_USER}
+      - EventBus__Password=${RABBITMQ_PASSWORD}
+      - EventBus__VirtualHost=sigortak
+      - EventBus__Port=5672
+      - Kafka__BootstrapServers=kafka:29092
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      postgres-read:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # SERVICES — Vehicle API
+  # ============================================
+  vehicle-api:
+    build:
+      context: .
+      dockerfile: src/Services/Vehicle/Sigortak.Vehicle.API/Dockerfile
+    container_name: sigortak-vehicle-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002
+      - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - ConnectionStrings__ReadDb=Host=postgres-read;Port=5432;Database=sigortak_read_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
+      - RabbitMq__HostName=rabbitmq
+      - RabbitMq__UserName=${RABBITMQ_USER}
+      - RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - RabbitMq__VirtualHost=sigortak
+      - RabbitMq__Port=5672
+      - EventBus__HostName=rabbitmq
+      - EventBus__UserName=${RABBITMQ_USER}
+      - EventBus__Password=${RABBITMQ_PASSWORD}
+      - EventBus__VirtualHost=sigortak
+      - EventBus__Port=5672
+      - Kafka__BootstrapServers=kafka:29092
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # SERVICES — Web UI
+  # ============================================
+  web-ui:
+    image: nginx:alpine
+    container_name: sigortak-web-ui
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/Web/dist:/usr/share/nginx/html
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
 volumes:
   postgres-write-data:
   postgres-read-data:

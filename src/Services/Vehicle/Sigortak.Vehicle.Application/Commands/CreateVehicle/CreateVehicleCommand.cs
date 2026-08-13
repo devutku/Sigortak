@@ -13,7 +13,12 @@ public class CreateVehicleCommand : IntegrationEvent
     public string Model { get; set; } = string.Empty;
     public int Year { get; set; }
     public string EngineNumber { get; set; } = string.Empty;
+    public string EngineCapacity { get; set; } = string.Empty;
     public string ChassisNumber { get; set; } = string.Empty;
+    public string RegistrationNumber { get; set; } = string.Empty;
     public Guid OwnerId { get; set; }
+    public string OwnerName { get; set; } = string.Empty;
     public VehicleBodyType BodyType { get; set; } = VehicleBodyType.Sedan;
+    public DateTime? InspectionDate { get; set; }
+    public DateTime? InsuranceEndDate { get; set; }
 }

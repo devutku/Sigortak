@@ -8,6 +8,8 @@ using Sigortak.Vehicle.Domain.Interfaces;
 using Sigortak.Vehicle.Infrastructure.Persistence;
 using Sigortak.Vehicle.Application.Commands.CreateVehicle;
 using Sigortak.Vehicle.Application.Consumers;
+using Sigortak.Vehicle.Application.Interfaces;
+using Sigortak.Vehicle.Infrastructure.BackgroundServices;
 using StackExchange.Redis;
 
 Log.Logger = new LoggerConfiguration()
@@ -43,8 +45,30 @@ try
                     errorCodesToAdd: null);
             }));
 
+    // PostgreSQL (Read DB)
+    builder.Services.AddDbContext<ReadDbContext>(options =>
+        options.UseNpgsql(
+            builder.Configuration.GetConnectionString("ReadDb"),
+            npgsqlOptions =>
+            {
+                npgsqlOptions.MigrationsAssembly(typeof(ReadDbContext).Assembly.FullName);
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(5),
+                    errorCodesToAdd: null);
+            }));
+
     // Repository'ler
     builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+    builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
+    builder.Services.AddScoped<Sigortak.Vehicle.Domain.Interfaces.IVehiclePolicyReadRepository, Sigortak.Vehicle.Infrastructure.Persistence.VehiclePolicyReadRepository>();
+
+    // Storage
+    builder.Services.AddScoped<IPolicyStorageService, Sigortak.Vehicle.Infrastructure.Storage.MinioStorageService>();
+
+    // Notifications
+    builder.Services.AddScoped<ISmsService, Sigortak.Vehicle.Infrastructure.Notifications.MockSmsService>();
+    builder.Services.AddScoped<INotificationService, Sigortak.Vehicle.Infrastructure.Notifications.MockFcmService>();
 
     // Redis (Read DB)
     var redisConnStr = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379,password=SigortakRedis2026!";
@@ -83,6 +107,16 @@ try
     // Background Consumers (RabbitMQ & Kafka)
     builder.Services.AddHostedService<CreateVehicleCommandConsumer>();
     builder.Services.AddHostedService<VehicleEventsConsumer>();
+    builder.Services.AddSingleton<PolicyExpirationWorker>();
+    builder.Services.AddHostedService<PolicyExpirationWorker>(sp => sp.GetRequiredService<PolicyExpirationWorker>());
+    builder.Services.AddHostedService<NotificationConsumer>();
+
+    // Health Checks
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(builder.Configuration.GetConnectionString("WriteDb")!)
+        .AddRedis(redisConnStr)
+        .AddRabbitMQ(setup => setup.ConnectionUri = new Uri($"amqp://{builder.Configuration["RabbitMq:UserName"]}:{builder.Configuration["RabbitMq:Password"]}@{builder.Configuration["RabbitMq:HostName"]}:{builder.Configuration["RabbitMq:Port"]}/{builder.Configuration["RabbitMq:VirtualHost"]}"))
+        .AddKafka(setup => setup.BootstrapServers = builder.Configuration["Kafka:BootstrapServers"]!);
 
     // Controllers
     builder.Services.AddControllers()
@@ -128,6 +162,9 @@ try
         var dbContext = scope.ServiceProvider.GetRequiredService<VehicleDbContext>();
         await dbContext.Database.MigrateAsync();
 
+        var readDbContext = scope.ServiceProvider.GetRequiredService<ReadDbContext>();
+        await readDbContext.Database.EnsureCreatedAsync();
+
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
@@ -139,6 +176,7 @@ try
     app.UseCors("AllowAll");
     app.UseAuthorization();
     app.MapControllers();
+    app.MapHealthChecks("/health");
 
     Log.Information("Sigortak Vehicle API başlatıldı — Port: {Urls}", app.Urls);
     await app.RunAsync();
