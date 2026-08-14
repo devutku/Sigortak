@@ -12,6 +12,8 @@ public class WorkOrderDbContext : DbContext
         _tenantProvider = tenantProvider;
     }
 
+    public Guid CurrentTenantId => _tenantProvider.TenantId ?? Guid.Empty;
+
     public DbSet<Domain.Entities.WorkOrder> WorkOrders => Set<Domain.Entities.WorkOrder>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,7 +26,7 @@ public class WorkOrderDbContext : DbContext
             entity.HasKey(e => e.Id);
 
             // Tenant global query filter
-            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+            entity.HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
             entity.Property(e => e.TenantId)
                 .IsRequired();

@@ -15,6 +15,8 @@ public class VehicleDbContext : DbContext
         _tenantProvider = tenantProvider;
     }
 
+    public Guid CurrentTenantId => _tenantProvider.TenantId ?? Guid.Empty;
+
     public DbSet<Domain.Entities.Vehicle> Vehicles => Set<Domain.Entities.Vehicle>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -27,7 +29,7 @@ public class VehicleDbContext : DbContext
             entity.HasKey(e => e.Id);
 
             // Tenant global query filter
-            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+            entity.HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
             entity.Property(e => e.TenantId)
                 .IsRequired();

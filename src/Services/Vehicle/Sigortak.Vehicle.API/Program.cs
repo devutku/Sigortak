@@ -168,9 +168,9 @@ try
         await readDbContext.Database.EnsureCreatedAsync();
 
         // Sync read database with write database if empty
-        if (!await readDbContext.VehiclePolicies.AnyAsync())
+        if (!await readDbContext.VehiclePolicies.IgnoreQueryFilters().AnyAsync())
         {
-            var vehiclesList = await dbContext.Vehicles.ToListAsync();
+            var vehiclesList = await dbContext.Vehicles.IgnoreQueryFilters().ToListAsync();
 
             foreach (var v in vehiclesList)
             {
@@ -200,6 +200,7 @@ try
                     Premium = null,
                     DocumentUrl = null,
                     PolicyIsActive = null,
+                    TenantId = v.TenantId,
                     UpdatedAt = DateTime.UtcNow
                 };
                 readDbContext.VehiclePolicies.Add(view);

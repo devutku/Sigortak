@@ -12,6 +12,8 @@ public class PolicyDbContext : DbContext
         _tenantProvider = tenantProvider;
     }
 
+    public Guid CurrentTenantId => _tenantProvider.TenantId ?? Guid.Empty;
+
     public DbSet<Domain.Entities.Policy> Policies => Set<Domain.Entities.Policy>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,7 +26,7 @@ public class PolicyDbContext : DbContext
             entity.HasKey(e => e.Id);
 
             // Tenant global query filter
-            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+            entity.HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
             entity.Property(e => e.TenantId)
                 .IsRequired();

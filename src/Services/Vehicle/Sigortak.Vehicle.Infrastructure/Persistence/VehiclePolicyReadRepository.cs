@@ -25,6 +25,10 @@ public class VehiclePolicyReadRepository : IVehiclePolicyReadRepository
 
     public async Task<List<VehiclePolicyView>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        var allCount = await _context.VehiclePolicies.IgnoreQueryFilters().CountAsync(cancellationToken);
+        var filteredCount = await _context.VehiclePolicies.CountAsync(cancellationToken);
+        System.Console.WriteLine($"[DEBUG] VehiclePolicyReadRepository: allCount={allCount}, filteredCount={filteredCount}");
+        
         return await _context.VehiclePolicies.OrderByDescending(vp => vp.UpdatedAt).ToListAsync(cancellationToken);
     }
 

@@ -16,6 +16,8 @@ public class ReadDbContext : DbContext
         _tenantProvider = tenantProvider;
     }
 
+    public Guid CurrentTenantId => _tenantProvider.TenantId ?? Guid.Empty;
+
     public DbSet<VehiclePolicyView> VehiclePolicies => Set<VehiclePolicyView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -28,7 +30,7 @@ public class ReadDbContext : DbContext
             entity.HasKey(e => e.VehicleId);
 
             // Tenant global query filter
-            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+            entity.HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
             entity.Property(e => e.TenantId).IsRequired();
             entity.Property(e => e.Plate).HasMaxLength(20).IsRequired();
