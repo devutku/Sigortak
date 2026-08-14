@@ -49,6 +49,10 @@ try
     // Repository'ler
     builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
 
+    // Tenant context
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<Sigortak.Common.ITenantProvider, Sigortak.Policy.API.Services.HttpTenantProvider>();
+
     // Storage
     builder.Services.AddScoped<IPolicyStorageService, Sigortak.Policy.Infrastructure.Storage.MinioStorageService>();
 

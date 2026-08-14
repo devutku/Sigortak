@@ -5,8 +5,9 @@ namespace Sigortak.Vehicle.Domain.Entities;
 /// <summary>
 /// Sistemdeki araç bilgisini temsil eden Entity.
 /// </summary>
-public class Vehicle : AuditableEntity
+public class Vehicle : AuditableEntity, IMultiTenant
 {
+    public Guid TenantId { get; set; }
     public string Plate { get; set; } = string.Empty;
     public string Brand { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;

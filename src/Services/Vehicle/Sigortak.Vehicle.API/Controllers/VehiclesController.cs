@@ -20,11 +20,13 @@ public class VehiclesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly RabbitMqEventBus _eventBus;
+    private readonly Sigortak.Common.ITenantProvider _tenantProvider;
 
-    public VehiclesController(IMediator mediator, RabbitMqEventBus eventBus)
+    public VehiclesController(IMediator mediator, RabbitMqEventBus eventBus, Sigortak.Common.ITenantProvider tenantProvider)
     {
         _mediator = mediator;
         _eventBus = eventBus;
+        _tenantProvider = tenantProvider;
     }
 
     /// <summary>
@@ -34,6 +36,7 @@ public class VehiclesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> Create([FromBody] CreateVehicleCommand command)
     {
+        command.TenantId = _tenantProvider.TenantId ?? Guid.Empty;
         // Asenkron kuyruğa gönder
         await _eventBus.PublishAsync(command);
         return Accepted(new { Message = "Araç oluşturma isteği alındı ve işlenmek üzere kuyruğa eklendi." });

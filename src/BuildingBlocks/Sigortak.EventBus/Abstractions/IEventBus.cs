@@ -35,4 +35,5 @@ public class IntegrationEvent
     public Guid Id { get; } = Guid.NewGuid();
     public DateTime CreatedAt { get; } = DateTime.UtcNow;
     public string EventTypeName => GetType().Name;
+    public Guid TenantId { get; set; }
 }

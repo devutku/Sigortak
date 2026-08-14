@@ -49,6 +49,9 @@ public class IdentityDbContext : DbContext
                 .HasMaxLength(50)
                 .IsRequired();
 
+            entity.Property(e => e.TenantId)
+                .IsRequired();
+
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.CreatedBy).HasMaxLength(100);
             entity.Property(e => e.UpdatedBy).HasMaxLength(100);
@@ -89,6 +92,7 @@ public class IdentityDbContext : DbContext
             LastName = "Yöneticisi",
             Role = Domain.Enums.Role.SystemAdmin,
             IsActive = true,
+            TenantId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             CreatedBy = "system"
         });

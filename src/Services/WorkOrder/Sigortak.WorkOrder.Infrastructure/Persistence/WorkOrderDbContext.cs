@@ -5,8 +5,11 @@ namespace Sigortak.WorkOrder.Infrastructure.Persistence;
 
 public class WorkOrderDbContext : DbContext
 {
-    public WorkOrderDbContext(DbContextOptions<WorkOrderDbContext> options) : base(options)
+    private readonly Sigortak.Common.ITenantProvider _tenantProvider;
+
+    public WorkOrderDbContext(DbContextOptions<WorkOrderDbContext> options, Sigortak.Common.ITenantProvider tenantProvider) : base(options)
     {
+        _tenantProvider = tenantProvider;
     }
 
     public DbSet<Domain.Entities.WorkOrder> WorkOrders => Set<Domain.Entities.WorkOrder>();
@@ -19,6 +22,12 @@ public class WorkOrderDbContext : DbContext
         {
             entity.ToTable("work_orders");
             entity.HasKey(e => e.Id);
+
+            // Tenant global query filter
+            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+
+            entity.Property(e => e.TenantId)
+                .IsRequired();
 
             entity.Property(e => e.OrderNumber)
                 .HasMaxLength(50)
@@ -46,6 +55,10 @@ public class WorkOrderDbContext : DbContext
             {
                 case EntityState.Added:
                     entry.Entity.CreatedAt = DateTime.UtcNow;
+                    if (entry.Entity is Common.Entities.IMultiTenant mt && mt.TenantId == Guid.Empty)
+                    {
+                        mt.TenantId = _tenantProvider.TenantId ?? Guid.Empty;
+                    }
                     break;
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;

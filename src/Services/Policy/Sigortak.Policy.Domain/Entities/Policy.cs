@@ -6,8 +6,9 @@ namespace Sigortak.Policy.Domain.Entities;
 /// <summary>
 /// Sistemdeki poliçe bilgisini temsil eden Entity.
 /// </summary>
-public class Policy : AuditableEntity
+public class Policy : AuditableEntity, IMultiTenant
 {
+    public Guid TenantId { get; set; }
     public string PolicyNumber { get; set; } = string.Empty;
     public string SbmPolicyNumber { get; set; } = string.Empty; // SBM Poliçe No
     public Guid VehicleId { get; set; }

@@ -8,9 +8,12 @@ namespace Sigortak.Vehicle.Infrastructure.Persistence;
 /// </summary>
 public class ReadDbContext : DbContext
 {
-    public ReadDbContext(DbContextOptions<ReadDbContext> options)
+    private readonly Sigortak.Common.ITenantProvider _tenantProvider;
+
+    public ReadDbContext(DbContextOptions<ReadDbContext> options, Sigortak.Common.ITenantProvider tenantProvider)
         : base(options)
     {
+        _tenantProvider = tenantProvider;
     }
 
     public DbSet<VehiclePolicyView> VehiclePolicies => Set<VehiclePolicyView>();
@@ -24,6 +27,10 @@ public class ReadDbContext : DbContext
             entity.ToTable("vehicle_policies");
             entity.HasKey(e => e.VehicleId);
 
+            // Tenant global query filter
+            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+
+            entity.Property(e => e.TenantId).IsRequired();
             entity.Property(e => e.Plate).HasMaxLength(20).IsRequired();
             entity.Property(e => e.Brand).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Model).HasMaxLength(100).IsRequired();

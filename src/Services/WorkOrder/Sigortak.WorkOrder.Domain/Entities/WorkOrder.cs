@@ -3,8 +3,9 @@ using Sigortak.WorkOrder.Domain.Enums;
 
 namespace Sigortak.WorkOrder.Domain.Entities;
 
-public class WorkOrder : AuditableEntity
+public class WorkOrder : AuditableEntity, IMultiTenant
 {
+    public Guid TenantId { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

@@ -64,6 +64,10 @@ try
     builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
     builder.Services.AddScoped<Sigortak.Vehicle.Domain.Interfaces.IVehiclePolicyReadRepository, Sigortak.Vehicle.Infrastructure.Persistence.VehiclePolicyReadRepository>();
 
+    // Tenant context
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<Sigortak.Common.ITenantProvider, Sigortak.Vehicle.API.Services.HttpTenantProvider>();
+
     // Storage (Only needed if vehicle service directly uploads, but it was used for policies. Let's remove IPolicyStorageService registration)
 
     // Notifications

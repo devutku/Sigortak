@@ -1,7 +1,10 @@
+using Sigortak.Common.Entities;
+
 namespace Sigortak.Vehicle.Domain.Entities;
 
-public class VehiclePolicyView
+public class VehiclePolicyView : IMultiTenant
 {
+    public Guid TenantId { get; set; }
     public Guid VehicleId { get; set; }
     public string Plate { get; set; } = string.Empty;
     public string Brand { get; set; } = string.Empty;

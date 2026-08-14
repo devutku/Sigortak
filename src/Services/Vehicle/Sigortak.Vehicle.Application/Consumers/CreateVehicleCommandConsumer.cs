@@ -113,6 +113,7 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         BodyType = command.BodyType,
                         InspectionDate = command.InspectionDate,
                         InsuranceEndDate = command.InsuranceEndDate,
+                        TenantId = command.TenantId,
                         IsActive = true
                     };
 
@@ -136,6 +137,7 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         vehicle.InspectionDate,
                         vehicle.InsuranceEndDate
                     );
+                    syncEvent.TenantId = command.TenantId;
 
                     await kafkaEventBus.PublishAsync(syncEvent, stoppingToken);
                 }

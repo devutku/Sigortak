@@ -15,5 +15,6 @@ public record RegisterCommand(
     string FirstName,
     string LastName,
     string? PhoneNumber,
-    Role Role = Role.IndividualUser
+    Role Role = Role.IndividualUser,
+    Guid? TenantId = null
 ) : ICommand<Result<AuthResponseDto>>;

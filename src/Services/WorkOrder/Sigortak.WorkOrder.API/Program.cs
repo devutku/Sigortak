@@ -47,6 +47,10 @@ try
     // Repository'ler
     builder.Services.AddScoped<IWorkOrderRepository, WorkOrderRepository>();
 
+    // Tenant context
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<Sigortak.Common.ITenantProvider, Sigortak.WorkOrder.API.Services.HttpTenantProvider>();
+
     // Redis
     var redisConnStr = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379,password=SigortakRedis2026!";
     builder.Services.AddSingleton<IConnectionMultiplexer>(sp => 

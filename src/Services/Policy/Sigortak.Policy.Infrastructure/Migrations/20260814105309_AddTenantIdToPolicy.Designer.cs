@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Sigortak.WorkOrder.Infrastructure.Persistence;
+using Sigortak.Policy.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Sigortak.WorkOrder.Infrastructure.Migrations
+namespace Sigortak.Policy.Infrastructure.Migrations
 {
-    [DbContext(typeof(WorkOrderDbContext))]
-    partial class WorkOrderDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(PolicyDbContext))]
+    [Migration("20260814105309_AddTenantIdToPolicy")]
+    partial class AddTenantIdToPolicy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,13 +25,10 @@ namespace Sigortak.WorkOrder.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Sigortak.WorkOrder.Domain.Entities.WorkOrder", b =>
+            modelBuilder.Entity("Sigortak.Policy.Domain.Entities.Policy", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("AssignedUserId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -38,40 +38,39 @@ namespace Sigortak.WorkOrder.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("DocumentUrl")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
-                    b.Property<string>("OrderNumber")
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PolicyNumber")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<int>("OrderType")
+                    b.Property<int>("PolicyType")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Priority")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Premium")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
-                    b.Property<Guid?>("RelatedEntityId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("SpecialNotes")
+                    b.Property<string>("SbmPolicyNumber")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -80,12 +79,15 @@ namespace Sigortak.WorkOrder.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderNumber")
+                    b.HasIndex("PolicyNumber")
                         .IsUnique();
 
-                    b.ToTable("work_orders", (string)null);
+                    b.ToTable("policies", (string)null);
                 });
 #pragma warning restore 612, 618
         }

@@ -46,6 +46,7 @@ public class RegisterCommandHandler : ICommandHandler<RegisterCommand, Result<Au
             LastName = request.LastName,
             PhoneNumber = request.PhoneNumber,
             Role = request.Role,
+            TenantId = request.TenantId ?? Guid.NewGuid(),
             IsActive = true
         };
 

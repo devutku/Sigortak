@@ -5,8 +5,11 @@ namespace Sigortak.Policy.Infrastructure.Persistence;
 
 public class PolicyDbContext : DbContext
 {
-    public PolicyDbContext(DbContextOptions<PolicyDbContext> options) : base(options)
+    private readonly Sigortak.Common.ITenantProvider _tenantProvider;
+
+    public PolicyDbContext(DbContextOptions<PolicyDbContext> options, Sigortak.Common.ITenantProvider tenantProvider) : base(options)
     {
+        _tenantProvider = tenantProvider;
     }
 
     public DbSet<Domain.Entities.Policy> Policies => Set<Domain.Entities.Policy>();
@@ -19,6 +22,12 @@ public class PolicyDbContext : DbContext
         {
             entity.ToTable("policies");
             entity.HasKey(e => e.Id);
+
+            // Tenant global query filter
+            entity.HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId);
+
+            entity.Property(e => e.TenantId)
+                .IsRequired();
 
             entity.Property(e => e.PolicyNumber)
                 .HasMaxLength(50)
@@ -47,6 +56,10 @@ public class PolicyDbContext : DbContext
             {
                 case EntityState.Added:
                     entry.Entity.CreatedAt = DateTime.UtcNow;
+                    if (entry.Entity is Common.Entities.IMultiTenant mt && mt.TenantId == Guid.Empty)
+                    {
+                        mt.TenantId = _tenantProvider.TenantId ?? Guid.Empty;
+                    }
                     break;
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;

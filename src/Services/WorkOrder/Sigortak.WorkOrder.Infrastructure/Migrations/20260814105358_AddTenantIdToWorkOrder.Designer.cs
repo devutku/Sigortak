@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sigortak.WorkOrder.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Sigortak.WorkOrder.Infrastructure.Persistence;
 namespace Sigortak.WorkOrder.Infrastructure.Migrations
 {
     [DbContext(typeof(WorkOrderDbContext))]
-    partial class WorkOrderDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814105358_AddTenantIdToWorkOrder")]
+    partial class AddTenantIdToWorkOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

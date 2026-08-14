@@ -15,12 +15,12 @@ public class VehiclePolicyReadRepository : IVehiclePolicyReadRepository
 
     public async Task<VehiclePolicyView?> GetByVehicleIdAsync(Guid vehicleId, CancellationToken cancellationToken = default)
     {
-        return await _context.VehiclePolicies.FirstOrDefaultAsync(vp => vp.VehicleId == vehicleId, cancellationToken);
+        return await _context.VehiclePolicies.IgnoreQueryFilters().FirstOrDefaultAsync(vp => vp.VehicleId == vehicleId, cancellationToken);
     }
 
     public async Task<VehiclePolicyView?> GetByPlateAsync(string plate, CancellationToken cancellationToken = default)
     {
-        return await _context.VehiclePolicies.FirstOrDefaultAsync(vp => vp.Plate.ToLower() == plate.ToLower(), cancellationToken);
+        return await _context.VehiclePolicies.IgnoreQueryFilters().FirstOrDefaultAsync(vp => vp.Plate.ToLower() == plate.ToLower(), cancellationToken);
     }
 
     public async Task<List<VehiclePolicyView>> GetAllAsync(CancellationToken cancellationToken = default)

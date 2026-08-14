@@ -100,6 +100,7 @@ public class VehicleEventsConsumer : BackgroundService
                                     UsageType = vehicleEvent.UsageType,
                                     TrafficRegistrationDate = vehicleEvent.TrafficRegistrationDate,
                                     InspectionDate = vehicleEvent.InspectionDate,
+                                    TenantId = vehicleEvent.TenantId,
                                     UpdatedAt = DateTime.UtcNow
                                 };
                                 await readRepository.CreateAsync(view, stoppingToken);
