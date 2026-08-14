@@ -29,8 +29,13 @@ public class ReadDbContext : DbContext
             entity.Property(e => e.Model).HasMaxLength(100).IsRequired();
             entity.Property(e => e.BodyType).HasMaxLength(50).IsRequired();
             entity.Property(e => e.PolicyNumber).HasMaxLength(100);
+            entity.Property(e => e.SbmPolicyNumber).HasMaxLength(100);
             entity.Property(e => e.DocumentUrl).HasMaxLength(500);
             entity.Property(e => e.Premium).HasPrecision(18, 2);
+            entity.Property(e => e.OwnerTcNo).HasMaxLength(20);
+            entity.Property(e => e.OwnerAddress).HasMaxLength(500);
+            entity.Property(e => e.UsageType).HasMaxLength(100);
+            entity.Property(e => e.TrafficRegistrationDate);
         });
     }
 }

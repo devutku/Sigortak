@@ -6,16 +6,18 @@ public class PolicyRenewedEvent : IntegrationEvent
 {
     public Guid PolicyId { get; }
     public string PolicyNumber { get; }
+    public string SbmPolicyNumber { get; }
     public Guid VehicleId { get; }
     public DateTime StartDate { get; }
     public DateTime EndDate { get; }
     public decimal Premium { get; }
     public string DocumentUrl { get; }
 
-    public PolicyRenewedEvent(Guid policyId, string policyNumber, Guid vehicleId, DateTime startDate, DateTime endDate, decimal premium, string documentUrl)
+    public PolicyRenewedEvent(Guid policyId, string policyNumber, string sbmPolicyNumber, Guid vehicleId, DateTime startDate, DateTime endDate, decimal premium, string documentUrl)
     {
         PolicyId = policyId;
         PolicyNumber = policyNumber;
+        SbmPolicyNumber = sbmPolicyNumber;
         VehicleId = vehicleId;
         StartDate = startDate;
         EndDate = endDate;

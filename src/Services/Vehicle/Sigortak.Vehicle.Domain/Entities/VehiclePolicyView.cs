@@ -13,11 +13,16 @@ public class VehiclePolicyView
     public string RegistrationNumber { get; set; } = string.Empty;
     public Guid OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
+    public string OwnerTcNo { get; set; } = string.Empty;
+    public string OwnerAddress { get; set; } = string.Empty;
+    public string UsageType { get; set; } = string.Empty;
+    public DateTime? TrafficRegistrationDate { get; set; }
     public DateTime? InspectionDate { get; set; }
     
     // Policy fields
     public Guid? PolicyId { get; set; }
     public string? PolicyNumber { get; set; }
+    public string? SbmPolicyNumber { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public decimal? Premium { get; set; }

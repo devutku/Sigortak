@@ -17,6 +17,10 @@ public class Vehicle : AuditableEntity
     public string RegistrationNumber { get; set; } = string.Empty; // Ruhsat numarası
     public Guid OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty; // Araç sahibi adı
+    public string OwnerTcNo { get; set; } = string.Empty; // T.C. Kimlik / Vergi No
+    public string OwnerAddress { get; set; } = string.Empty; // Adres
+    public string UsageType { get; set; } = string.Empty; // Kullanım Tarzı
+    public DateTime? TrafficRegistrationDate { get; set; } // Trafik Tescil Tarihi
     public Enums.VehicleBodyType BodyType { get; set; } = Enums.VehicleBodyType.Sedan;
     public DateTime? InspectionDate { get; set; }
     public DateTime? InsuranceEndDate { get; set; }

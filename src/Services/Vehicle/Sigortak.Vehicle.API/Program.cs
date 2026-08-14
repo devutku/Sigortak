@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Serilog;
 using Sigortak.CQRS.Behaviors;
 using Sigortak.EventBus;
@@ -9,7 +10,6 @@ using Sigortak.Vehicle.Infrastructure.Persistence;
 using Sigortak.Vehicle.Application.Commands.CreateVehicle;
 using Sigortak.Vehicle.Application.Consumers;
 using Sigortak.Vehicle.Application.Interfaces;
-using Sigortak.Vehicle.Infrastructure.BackgroundServices;
 using StackExchange.Redis;
 
 Log.Logger = new LoggerConfiguration()
@@ -43,7 +43,8 @@ try
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorCodesToAdd: null);
-            }));
+            })
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
     // PostgreSQL (Read DB)
     builder.Services.AddDbContext<ReadDbContext>(options =>
@@ -56,15 +57,14 @@ try
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorCodesToAdd: null);
-            }));
+            })
+            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
     // Repository'ler
     builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
-    builder.Services.AddScoped<IPolicyRepository, PolicyRepository>();
     builder.Services.AddScoped<Sigortak.Vehicle.Domain.Interfaces.IVehiclePolicyReadRepository, Sigortak.Vehicle.Infrastructure.Persistence.VehiclePolicyReadRepository>();
 
-    // Storage
-    builder.Services.AddScoped<IPolicyStorageService, Sigortak.Vehicle.Infrastructure.Storage.MinioStorageService>();
+    // Storage (Only needed if vehicle service directly uploads, but it was used for policies. Let's remove IPolicyStorageService registration)
 
     // Notifications
     builder.Services.AddScoped<ISmsService, Sigortak.Vehicle.Infrastructure.Notifications.MockSmsService>();
@@ -107,8 +107,6 @@ try
     // Background Consumers (RabbitMQ & Kafka)
     builder.Services.AddHostedService<CreateVehicleCommandConsumer>();
     builder.Services.AddHostedService<VehicleEventsConsumer>();
-    builder.Services.AddSingleton<PolicyExpirationWorker>();
-    builder.Services.AddHostedService<PolicyExpirationWorker>(sp => sp.GetRequiredService<PolicyExpirationWorker>());
     builder.Services.AddHostedService<NotificationConsumer>();
 
     // Health Checks
@@ -164,6 +162,46 @@ try
 
         var readDbContext = scope.ServiceProvider.GetRequiredService<ReadDbContext>();
         await readDbContext.Database.EnsureCreatedAsync();
+
+        // Sync read database with write database if empty
+        if (!await readDbContext.VehiclePolicies.AnyAsync())
+        {
+            var vehiclesList = await dbContext.Vehicles.ToListAsync();
+
+            foreach (var v in vehiclesList)
+            {
+                var view = new Sigortak.Vehicle.Domain.Entities.VehiclePolicyView
+                {
+                    VehicleId = v.Id,
+                    Plate = v.Plate,
+                    Brand = v.Brand,
+                    Model = v.Model,
+                    Year = v.Year,
+                    BodyType = v.BodyType.ToString(),
+                    EngineCapacity = v.EngineCapacity,
+                    ChassisNumber = v.ChassisNumber,
+                    RegistrationNumber = v.RegistrationNumber,
+                    OwnerId = v.OwnerId,
+                    OwnerName = v.OwnerName,
+                    OwnerTcNo = v.OwnerTcNo,
+                    OwnerAddress = v.OwnerAddress,
+                    UsageType = v.UsageType,
+                    TrafficRegistrationDate = v.TrafficRegistrationDate,
+                    InspectionDate = v.InspectionDate,
+                    PolicyId = null,
+                    PolicyNumber = null,
+                    SbmPolicyNumber = null,
+                    StartDate = null,
+                    EndDate = null,
+                    Premium = null,
+                    DocumentUrl = null,
+                    PolicyIsActive = null,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                readDbContext.VehiclePolicies.Add(view);
+            }
+            await readDbContext.SaveChangesAsync();
+        }
 
         app.UseSwagger();
         app.UseSwaggerUI(c =>

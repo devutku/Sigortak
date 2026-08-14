@@ -78,11 +78,12 @@ public class CreateVehicleCommandConsumer : BackgroundService
         consumer.Received += async (ch, ea) =>
         {
             var content = Encoding.UTF8.GetString(ea.Body.ToArray());
-            var command = JsonSerializer.Deserialize<CreateVehicleCommand>(content);
+            var deserializeOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var command = JsonSerializer.Deserialize<CreateVehicleCommand>(content, deserializeOptions);
 
             if (command != null)
             {
-                _logger.LogInformation("CreateVehicleCommand alındı plaka: {Plate}", command.Plate);
+                _logger.LogInformation("CreateVehicleCommand alındı plaka: {Plate}, OwnerName: {OwnerName}", command.Plate, command.OwnerName);
 
                 using var scope = _serviceProvider.CreateScope();
                 var repository = scope.ServiceProvider.GetRequiredService<IVehicleRepository>();
@@ -105,6 +106,10 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         RegistrationNumber = command.RegistrationNumber,
                         OwnerId = command.OwnerId,
                         OwnerName = command.OwnerName,
+                        OwnerTcNo = command.OwnerTcNo,
+                        OwnerAddress = command.OwnerAddress,
+                        UsageType = command.UsageType,
+                        TrafficRegistrationDate = command.TrafficRegistrationDate,
                         BodyType = command.BodyType,
                         InspectionDate = command.InspectionDate,
                         InsuranceEndDate = command.InsuranceEndDate,
@@ -122,6 +127,11 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         vehicle.Model,
                         vehicle.Year,
                         vehicle.OwnerId,
+                        vehicle.OwnerName,
+                        vehicle.OwnerTcNo,
+                        vehicle.OwnerAddress,
+                        vehicle.UsageType,
+                        vehicle.TrafficRegistrationDate,
                         vehicle.BodyType,
                         vehicle.InspectionDate,
                         vehicle.InsuranceEndDate

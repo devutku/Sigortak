@@ -16,6 +16,10 @@ public class VehicleDto
     public string RegistrationNumber { get; set; } = string.Empty;
     public Guid OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
+    public string OwnerTcNo { get; set; } = string.Empty;
+    public string OwnerAddress { get; set; } = string.Empty;
+    public string UsageType { get; set; } = string.Empty;
+    public DateTime? TrafficRegistrationDate { get; set; }
     public string BodyType { get; set; } = string.Empty;
     public DateTime? InspectionDate { get; set; }
     public DateTime? InsuranceEndDate { get; set; }
@@ -66,6 +70,7 @@ public class VehicleDto
     // Active policy details if available
     public Guid? PolicyId { get; set; }
     public string? PolicyNumber { get; set; }
+    public string? SbmPolicyNumber { get; set; }
     public DateTime? PolicyStartDate { get; set; }
     public DateTime? PolicyEndDate { get; set; }
     public decimal? PolicyPremium { get; set; }

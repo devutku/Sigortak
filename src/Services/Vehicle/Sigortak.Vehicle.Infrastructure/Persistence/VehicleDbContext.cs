@@ -13,7 +13,6 @@ public class VehicleDbContext : DbContext
     }
 
     public DbSet<Domain.Entities.Vehicle> Vehicles => Set<Domain.Entities.Vehicle>();
-    public DbSet<Domain.Entities.Policy> Policies => Set<Domain.Entities.Policy>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,27 +35,10 @@ public class VehicleDbContext : DbContext
             entity.Property(e => e.BodyType).IsRequired();
             entity.Property(e => e.InspectionDate);
             entity.Property(e => e.InsuranceEndDate);
-
-            entity.Property(e => e.CreatedAt).IsRequired();
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
-        });
-
-        modelBuilder.Entity<Domain.Entities.Policy>(entity =>
-        {
-            entity.ToTable("policies");
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.PolicyNumber)
-                .HasMaxLength(50)
-                .IsRequired();
-            entity.HasIndex(e => e.PolicyNumber).IsUnique();
-
-            entity.Property(e => e.VehicleId).IsRequired();
-            entity.Property(e => e.StartDate).IsRequired();
-            entity.Property(e => e.EndDate).IsRequired();
-            entity.Property(e => e.Premium).HasPrecision(18, 2).IsRequired();
-            entity.Property(e => e.DocumentUrl).HasMaxLength(500);
+            entity.Property(e => e.OwnerTcNo).HasMaxLength(20);
+            entity.Property(e => e.OwnerAddress).HasMaxLength(500);
+            entity.Property(e => e.UsageType).HasMaxLength(100);
+            entity.Property(e => e.TrafficRegistrationDate);
 
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.CreatedBy).HasMaxLength(100);

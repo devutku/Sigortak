@@ -94,6 +94,11 @@ public class VehicleEventsConsumer : BackgroundService
                                     Year = vehicleEvent.Year,
                                     BodyType = vehicleEvent.BodyType.ToString(),
                                     OwnerId = vehicleEvent.OwnerId,
+                                    OwnerName = vehicleEvent.OwnerName,
+                                    OwnerTcNo = vehicleEvent.OwnerTcNo,
+                                    OwnerAddress = vehicleEvent.OwnerAddress,
+                                    UsageType = vehicleEvent.UsageType,
+                                    TrafficRegistrationDate = vehicleEvent.TrafficRegistrationDate,
                                     InspectionDate = vehicleEvent.InspectionDate,
                                     UpdatedAt = DateTime.UtcNow
                                 };
@@ -111,6 +116,11 @@ public class VehicleEventsConsumer : BackgroundService
                                 Model = vehicleEvent.Model,
                                 Year = vehicleEvent.Year,
                                 OwnerId = vehicleEvent.OwnerId,
+                                OwnerName = vehicleEvent.OwnerName,
+                                OwnerTcNo = vehicleEvent.OwnerTcNo,
+                                OwnerAddress = vehicleEvent.OwnerAddress,
+                                UsageType = vehicleEvent.UsageType,
+                                TrafficRegistrationDate = vehicleEvent.TrafficRegistrationDate,
                                 BodyType = vehicleEvent.BodyType.ToString(),
                                 InspectionDate = vehicleEvent.InspectionDate,
                                 InsuranceEndDate = vehicleEvent.InsuranceEndDate,
@@ -127,7 +137,17 @@ public class VehicleEventsConsumer : BackgroundService
                         var policyEvent = JsonSerializer.Deserialize<PolicyCreatedEvent>(consumeResult.Message.Value);
                         if (policyEvent != null)
                         {
-                            // Update Read DB
+                            // 1. Update Write DB
+                            var vehicleRepo = scope.ServiceProvider.GetRequiredService<IVehicleRepository>();
+                            var vehicle = await vehicleRepo.GetByIdAsync(policyEvent.VehicleId, stoppingToken);
+                            if (vehicle != null && (vehicle.InsuranceEndDate == null || policyEvent.EndDate > vehicle.InsuranceEndDate))
+                            {
+                                vehicle.InsuranceEndDate = policyEvent.EndDate;
+                                await vehicleRepo.UpdateAsync(vehicle, stoppingToken);
+                                _logger.LogInformation("Write DB araç sigorta bitiş tarihi güncellendi: VehicleId: {VehicleId}, EndDate: {EndDate}", vehicle.Id, vehicle.InsuranceEndDate);
+                            }
+
+                            // 2. Update Read DB
                             var view = await readRepository.GetByVehicleIdAsync(policyEvent.VehicleId, stoppingToken);
                             if (view != null)
                             {
@@ -144,7 +164,7 @@ public class VehicleEventsConsumer : BackgroundService
                                 _logger.LogInformation("Read DB araç poliçesi güncellendi: VehicleId: {VehicleId}, PolicyId: {PolicyId}", view.VehicleId, view.PolicyId);
                             }
 
-                            // Clear cache
+                            // 3. Clear cache
                             await redisDb.KeyDeleteAsync(CacheKeyAll);
                             var plateKey = view != null ? $"vehicle:plate:{view.Plate.ToUpperInvariant()}" : null;
                             if (plateKey != null) await redisDb.KeyDeleteAsync(plateKey);
@@ -155,7 +175,17 @@ public class VehicleEventsConsumer : BackgroundService
                         var policyEvent = JsonSerializer.Deserialize<PolicyRenewedEvent>(consumeResult.Message.Value);
                         if (policyEvent != null)
                         {
-                            // Update Read DB
+                            // 1. Update Write DB
+                            var vehicleRepo = scope.ServiceProvider.GetRequiredService<IVehicleRepository>();
+                            var vehicle = await vehicleRepo.GetByIdAsync(policyEvent.VehicleId, stoppingToken);
+                            if (vehicle != null)
+                            {
+                                vehicle.InsuranceEndDate = policyEvent.EndDate;
+                                await vehicleRepo.UpdateAsync(vehicle, stoppingToken);
+                                _logger.LogInformation("Write DB araç sigorta bitiş tarihi yenilendi: VehicleId: {VehicleId}, EndDate: {EndDate}", vehicle.Id, vehicle.InsuranceEndDate);
+                            }
+
+                            // 2. Update Read DB
                             var view = await readRepository.GetByVehicleIdAsync(policyEvent.VehicleId, stoppingToken);
                             if (view != null)
                             {
@@ -172,7 +202,7 @@ public class VehicleEventsConsumer : BackgroundService
                                 _logger.LogInformation("Read DB araç poliçesi yenilendi: VehicleId: {VehicleId}, PolicyId: {PolicyId}", view.VehicleId, view.PolicyId);
                             }
 
-                            // Clear cache
+                            // 3. Clear cache
                             await redisDb.KeyDeleteAsync(CacheKeyAll);
                             var plateKey = view != null ? $"vehicle:plate:{view.Plate.ToUpperInvariant()}" : null;
                             if (plateKey != null) await redisDb.KeyDeleteAsync(plateKey);

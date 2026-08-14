@@ -18,6 +18,10 @@ public class CreateVehicleCommand : IntegrationEvent
     public string RegistrationNumber { get; set; } = string.Empty;
     public Guid OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
+    public string OwnerTcNo { get; set; } = string.Empty;
+    public string OwnerAddress { get; set; } = string.Empty;
+    public string UsageType { get; set; } = string.Empty;
+    public DateTime? TrafficRegistrationDate { get; set; }
     public VehicleBodyType BodyType { get; set; } = VehicleBodyType.Sedan;
     public DateTime? InspectionDate { get; set; }
     public DateTime? InsuranceEndDate { get; set; }

@@ -268,6 +268,86 @@ services:
     restart: unless-stopped
 
   # ============================================
+  # SERVICES — Policy API
+  # ============================================
+  policy-api:
+    build:
+      context: .
+      dockerfile: src/Services/Policy/Sigortak.Policy.API/Dockerfile
+    container_name: sigortak-policy-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5003
+      - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
+      - Kafka__BootstrapServers=kafka:29092
+    ports:
+      - "5003:5003"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # SERVICES — WorkOrder API
+  # ============================================
+  workorder-api:
+    build:
+      context: .
+      dockerfile: src/Services/WorkOrder/Sigortak.WorkOrder.API/Dockerfile
+    container_name: sigortak-workorder-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5004
+      - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
+      - Kafka__BootstrapServers=kafka:29092
+    ports:
+      - "5004:5004"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # SERVICES — API Gateway
+  # ============================================
+  gateway:
+    build:
+      context: .
+      dockerfile: src/ApiGateway/Sigortak.Gateway/Dockerfile
+    container_name: sigortak-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ReverseProxy__Clusters__identity-cluster__Destinations__identity-api__Address=http://identity-api:5001/
+      - ReverseProxy__Clusters__vehicle-cluster__Destinations__vehicle-api__Address=http://vehicle-api:5002/
+      - ReverseProxy__Clusters__policy-cluster__Destinations__policy-api__Address=http://policy-api:5003/
+      - ReverseProxy__Clusters__workorder-cluster__Destinations__workorder-api__Address=http://workorder-api:5004/
+    ports:
+      - "5000:5000"
+    depends_on:
+      - identity-api
+      - vehicle-api
+      - policy-api
+      - workorder-api
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
   # SERVICES — Web UI
   # ============================================
   web-ui:
