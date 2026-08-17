@@ -13,6 +13,7 @@ public class CreatePolicyCommand : IRequest<Result<Guid>>
     public DateTime EndDate { get; set; }
     public decimal Premium { get; set; }
     public PolicyType PolicyType { get; set; } = PolicyType.Traffic;
+    public string DocumentUrl { get; set; } = string.Empty;
     
     public Stream FileStream { get; set; } = Stream.Null;
     public string FileName { get; set; } = string.Empty;

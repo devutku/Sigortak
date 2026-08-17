@@ -60,6 +60,13 @@ namespace Sigortak.Vehicle.Infrastructure.Migrations
                     b.Property<DateTime?>("InspectionDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("InspectionDocumentUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool?>("InspectionPassed")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("InsuranceEndDate")
                         .HasColumnType("timestamp with time zone");
 

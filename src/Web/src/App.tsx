@@ -33,6 +33,25 @@ interface Vehicle {
   policyDocumentUrl?: string;
 }
 
+interface Quote {
+  id: string;
+  vehicleId: string;
+  vehiclePlate: string;
+  vehicleInfo: string;
+  insuranceCompany: string;
+  agentName: string;
+  policyType: number;
+  premium: number;
+  validityDate: string;
+  status: number;
+  immLimit: string;
+  replacementCar: string;
+  deductible: string;
+  glassCoverage: boolean;
+  assistance: boolean;
+  documentUrl?: string;
+}
+
 const GATEWAY_URL = "http://localhost:5000";
 
 const CAR_BRANDS = [
@@ -59,7 +78,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   
   // Navigation & filtering states matching Web_old
-  const [activeMenu, setActiveMenu] = useState<'vehicles' | 'dashboard' | 'add-policy' | 'customers' | 'workorders'>('vehicles');
+  const [activeMenu, setActiveMenu] = useState<'vehicles' | 'dashboard' | 'add-policy' | 'customers' | 'workorders' | 'policies' | 'inspections' | 'fleet' | 'reminders' | 'quotes' | 'billing' | 'calendar'>('vehicles');
   const [activeFilter, setActiveFilter] = useState<'active' | 'archived'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [detailVehicle, setDetailVehicle] = useState<Vehicle | null>(null);

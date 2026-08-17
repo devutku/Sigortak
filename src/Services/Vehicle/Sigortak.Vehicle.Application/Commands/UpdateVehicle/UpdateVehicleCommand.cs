@@ -16,5 +16,7 @@ public record UpdateVehicleCommand(
     string ChassisNumber,
     VehicleBodyType BodyType,
     DateTime? InspectionDate,
+    bool? InspectionPassed,
+    string? InspectionDocumentUrl,
     DateTime? InsuranceEndDate
 ) : IRequest<Result<bool>>;

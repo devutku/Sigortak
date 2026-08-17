@@ -59,6 +59,8 @@ public class GetVehicleByPlateQueryHandler : IRequestHandler<GetVehicleByPlateQu
             OwnerId = dbVehicle.OwnerId,
             BodyType = dbVehicle.BodyType,
             InspectionDate = dbVehicle.InspectionDate,
+            InspectionPassed = dbVehicle.InspectionPassed,
+            InspectionDocumentUrl = dbVehicle.InspectionDocumentUrl,
             InsuranceEndDate = dbVehicle.EndDate,
             PolicyId = dbVehicle.PolicyId,
             PolicyNumber = dbVehicle.PolicyNumber,

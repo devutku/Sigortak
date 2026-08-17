@@ -135,6 +135,8 @@ public class CreateVehicleCommandConsumer : BackgroundService
                         vehicle.TrafficRegistrationDate,
                         vehicle.BodyType,
                         vehicle.InspectionDate,
+                        vehicle.InspectionPassed,
+                        vehicle.InspectionDocumentUrl,
                         vehicle.InsuranceEndDate
                     );
                     syncEvent.TenantId = command.TenantId;

@@ -23,7 +23,7 @@ public class VehicleEventsConsumer : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly KafkaSettings _settings;
     private readonly IConsumer<string, string> _consumer;
-    private const string CacheKeyAll = "vehicles:all";
+    private static string GetCacheKeyAll(Guid tenantId) => $"vehicles:all:tenant:{tenantId}";
 
     public VehicleEventsConsumer(
         ILogger<VehicleEventsConsumer> logger,
@@ -100,11 +100,32 @@ public class VehicleEventsConsumer : BackgroundService
                                     UsageType = vehicleEvent.UsageType,
                                     TrafficRegistrationDate = vehicleEvent.TrafficRegistrationDate,
                                     InspectionDate = vehicleEvent.InspectionDate,
+                                    InspectionPassed = vehicleEvent.InspectionPassed,
+                                    InspectionDocumentUrl = vehicleEvent.InspectionDocumentUrl,
                                     TenantId = vehicleEvent.TenantId,
                                     UpdatedAt = DateTime.UtcNow
                                 };
                                 await readRepository.CreateAsync(view, stoppingToken);
                                 _logger.LogInformation("Read DB'ye yeni araç kaydedildi: {Plate}", vehicleEvent.Plate);
+                            }
+                            else
+                            {
+                                existing.Brand = vehicleEvent.Brand;
+                                existing.Model = vehicleEvent.Model;
+                                existing.Year = vehicleEvent.Year;
+                                existing.BodyType = vehicleEvent.BodyType.ToString();
+                                existing.OwnerName = vehicleEvent.OwnerName;
+                                existing.OwnerTcNo = vehicleEvent.OwnerTcNo;
+                                existing.OwnerAddress = vehicleEvent.OwnerAddress;
+                                existing.UsageType = vehicleEvent.UsageType;
+                                existing.TrafficRegistrationDate = vehicleEvent.TrafficRegistrationDate;
+                                existing.InspectionDate = vehicleEvent.InspectionDate;
+                                existing.InspectionPassed = vehicleEvent.InspectionPassed;
+                                existing.InspectionDocumentUrl = vehicleEvent.InspectionDocumentUrl;
+                                existing.UpdatedAt = DateTime.UtcNow;
+
+                                await readRepository.UpdateAsync(existing, stoppingToken);
+                                _logger.LogInformation("Read DB'de mevcut araç güncellendi: {Plate}", vehicleEvent.Plate);
                             }
 
                             // 2. Write single vehicle info to Redis cache
@@ -124,13 +145,15 @@ public class VehicleEventsConsumer : BackgroundService
                                 TrafficRegistrationDate = vehicleEvent.TrafficRegistrationDate,
                                 BodyType = vehicleEvent.BodyType.ToString(),
                                 InspectionDate = vehicleEvent.InspectionDate,
+                                InspectionPassed = vehicleEvent.InspectionPassed,
+                                InspectionDocumentUrl = vehicleEvent.InspectionDocumentUrl,
                                 InsuranceEndDate = vehicleEvent.InsuranceEndDate,
                                 IsActive = true,
                                 CreatedAt = vehicleEvent.CreatedAt
                             };
 
                             await redisDb.StringSetAsync(cacheKey, JsonSerializer.Serialize(dto), TimeSpan.FromMinutes(15));
-                            await redisDb.KeyDeleteAsync(CacheKeyAll);
+                            await redisDb.KeyDeleteAsync(GetCacheKeyAll(vehicleEvent.TenantId));
                         }
                     }
                     else if (eventType == nameof(PolicyCreatedEvent))
@@ -166,7 +189,7 @@ public class VehicleEventsConsumer : BackgroundService
                             }
 
                             // 3. Clear cache
-                            await redisDb.KeyDeleteAsync(CacheKeyAll);
+                            await redisDb.KeyDeleteAsync(GetCacheKeyAll(policyEvent.TenantId));
                             var plateKey = view != null ? $"vehicle:plate:{view.Plate.ToUpperInvariant()}" : null;
                             if (plateKey != null) await redisDb.KeyDeleteAsync(plateKey);
                         }
@@ -204,7 +227,7 @@ public class VehicleEventsConsumer : BackgroundService
                             }
 
                             // 3. Clear cache
-                            await redisDb.KeyDeleteAsync(CacheKeyAll);
+                            await redisDb.KeyDeleteAsync(GetCacheKeyAll(policyEvent.TenantId));
                             var plateKey = view != null ? $"vehicle:plate:{view.Plate.ToUpperInvariant()}" : null;
                             if (plateKey != null) await redisDb.KeyDeleteAsync(plateKey);
                         }

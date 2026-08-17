@@ -45,6 +45,8 @@ public class VehicleDbContext : DbContext
             entity.Property(e => e.ChassisNumber).HasMaxLength(100);
             entity.Property(e => e.BodyType).IsRequired();
             entity.Property(e => e.InspectionDate);
+            entity.Property(e => e.InspectionPassed);
+            entity.Property(e => e.InspectionDocumentUrl).HasMaxLength(500);
             entity.Property(e => e.InsuranceEndDate);
             entity.Property(e => e.OwnerTcNo).HasMaxLength(20);
             entity.Property(e => e.OwnerAddress).HasMaxLength(500);

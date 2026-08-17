@@ -68,7 +68,8 @@ try
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<Sigortak.Common.ITenantProvider, Sigortak.Vehicle.API.Services.HttpTenantProvider>();
 
-    // Storage (Only needed if vehicle service directly uploads, but it was used for policies. Let's remove IPolicyStorageService registration)
+    // Storage
+    builder.Services.AddScoped<Sigortak.Vehicle.Application.Interfaces.IPolicyStorageService, Sigortak.Vehicle.Infrastructure.Storage.MinioStorageService>();
 
     // Notifications
     builder.Services.AddScoped<ISmsService, Sigortak.Vehicle.Infrastructure.Notifications.MockSmsService>();

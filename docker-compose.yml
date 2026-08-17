@@ -252,6 +252,7 @@ services:
       - EventBus__VirtualHost=sigortak
       - EventBus__Port=5672
       - Kafka__BootstrapServers=kafka:29092
+      - Minio__Endpoint=http://minio:9000
     ports:
       - "5002:5002"
     depends_on:
@@ -281,6 +282,7 @@ services:
       - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
       - Kafka__BootstrapServers=kafka:29092
+      - Minio__Endpoint=http://minio:9000
     ports:
       - "5003:5003"
     depends_on:
@@ -288,6 +290,57 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # SERVICES — Quote API
+  # ============================================
+  quote-api:
+    build:
+      context: .
+      dockerfile: src/Services/Quote/Sigortak.Quote.API/Dockerfile
+    container_name: sigortak-quote-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5005
+      - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
+      - Kafka__BootstrapServers=kafka:29092
+      - Minio__Endpoint=http://minio:9000
+      - PolicyService__Endpoint=http://policy-api:5003
+    ports:
+      - "5005:5005"
+    depends_on:
+      postgres-write:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # SERVICES — OCR Worker
+  # ============================================
+  ocr-worker:
+    build:
+      context: .
+      dockerfile: src/Services/Ocr/Sigortak.Ocr.Worker/Dockerfile
+    container_name: sigortak-ocr-worker
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5006
+      - Kafka__BootstrapServers=kafka:29092
+      - Minio__Endpoint=http://minio:9000
+    ports:
+      - "5006:5006"
+    depends_on:
       kafka:
         condition: service_healthy
     networks:
@@ -336,6 +389,8 @@ services:
       - ReverseProxy__Clusters__vehicle-cluster__Destinations__vehicle-api__Address=http://vehicle-api:5002/
       - ReverseProxy__Clusters__policy-cluster__Destinations__policy-api__Address=http://policy-api:5003/
       - ReverseProxy__Clusters__workorder-cluster__Destinations__workorder-api__Address=http://workorder-api:5004/
+      - ReverseProxy__Clusters__quote-cluster__Destinations__quote-api__Address=http://quote-api:5005/
+      - ReverseProxy__Clusters__ocr-cluster__Destinations__ocr-worker__Address=http://ocr-worker:5006/
     ports:
       - "5000:5000"
     depends_on:
@@ -343,6 +398,8 @@ services:
       - vehicle-api
       - policy-api
       - workorder-api
+      - quote-api
+      - ocr-worker
     networks:
       - sigortak-network
     restart: unless-stopped

@@ -22,6 +22,8 @@ public class VehicleDto
     public DateTime? TrafficRegistrationDate { get; set; }
     public string BodyType { get; set; } = string.Empty;
     public DateTime? InspectionDate { get; set; }
+    public bool? InspectionPassed { get; set; }
+    public string? InspectionDocumentUrl { get; set; }
     public DateTime? InsuranceEndDate { get; set; }
     public bool IsActive { get; set; }
 

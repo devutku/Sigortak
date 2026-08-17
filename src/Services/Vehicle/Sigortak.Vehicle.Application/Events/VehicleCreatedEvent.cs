@@ -21,6 +21,8 @@ public class VehicleCreatedEvent : IntegrationEvent
     public DateTime? TrafficRegistrationDate { get; }
     public VehicleBodyType BodyType { get; }
     public DateTime? InspectionDate { get; }
+    public bool? InspectionPassed { get; }
+    public string? InspectionDocumentUrl { get; }
     public DateTime? InsuranceEndDate { get; }
 
     public VehicleCreatedEvent(
@@ -37,6 +39,8 @@ public class VehicleCreatedEvent : IntegrationEvent
         DateTime? trafficRegistrationDate,
         VehicleBodyType bodyType, 
         DateTime? inspectionDate, 
+        bool? inspectionPassed,
+        string? inspectionDocumentUrl,
         DateTime? insuranceEndDate)
     {
         VehicleId = vehicleId;
@@ -52,6 +56,8 @@ public class VehicleCreatedEvent : IntegrationEvent
         TrafficRegistrationDate = trafficRegistrationDate;
         BodyType = bodyType;
         InspectionDate = inspectionDate;
+        InspectionPassed = inspectionPassed;
+        InspectionDocumentUrl = inspectionDocumentUrl;
         InsuranceEndDate = insuranceEndDate;
     }
 }

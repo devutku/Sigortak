@@ -21,6 +21,8 @@ public class VehiclePolicyView : IMultiTenant
     public string UsageType { get; set; } = string.Empty;
     public DateTime? TrafficRegistrationDate { get; set; }
     public DateTime? InspectionDate { get; set; }
+    public bool? InspectionPassed { get; set; }
+    public string? InspectionDocumentUrl { get; set; }
     
     // Policy fields
     public Guid? PolicyId { get; set; }

@@ -9,6 +9,9 @@ using Sigortak.Vehicle.Application.DTOs;
 using Sigortak.Vehicle.Application.Queries.GetVehicleByPlate;
 using Sigortak.Vehicle.Application.Queries.GetVehicles;
 
+using Sigortak.Vehicle.Application.Commands.UpdateVehicleInspection;
+using Sigortak.Vehicle.Application.Interfaces;
+
 namespace Sigortak.Vehicle.API.Controllers;
 
 /// <summary>
@@ -21,12 +24,18 @@ public class VehiclesController : ControllerBase
     private readonly IMediator _mediator;
     private readonly RabbitMqEventBus _eventBus;
     private readonly Sigortak.Common.ITenantProvider _tenantProvider;
+    private readonly IPolicyStorageService _storageService;
 
-    public VehiclesController(IMediator mediator, RabbitMqEventBus eventBus, Sigortak.Common.ITenantProvider tenantProvider)
+    public VehiclesController(
+        IMediator mediator, 
+        RabbitMqEventBus eventBus, 
+        Sigortak.Common.ITenantProvider tenantProvider,
+        IPolicyStorageService storageService)
     {
         _mediator = mediator;
         _eventBus = eventBus;
         _tenantProvider = tenantProvider;
+        _storageService = storageService;
     }
 
     /// <summary>
@@ -74,6 +83,50 @@ public class VehiclesController : ControllerBase
     public async Task<IActionResult> GetByPlate(string plate)
     {
         var result = await _mediator.Send(new GetVehicleByPlateQuery(plate));
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Araç muayene bilgilerini günceller ve muayene belgesini yükler.
+    /// </summary>
+    [HttpPost("inspection")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateInspection(
+        [FromForm] Guid vehicleId,
+        [FromForm] DateTime inspectionDate,
+        [FromForm] bool inspectionPassed,
+        IFormFile? file)
+    {
+        string? documentUrl = null;
+
+        if (file != null)
+        {
+            try
+            {
+                var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
+                using var stream = file.OpenReadStream();
+                documentUrl = await _storageService.UploadPolicyDocumentAsync(stream, uniqueFileName, file.ContentType);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(Result.Failure("Muayene belgesi yüklenemedi: " + ex.Message));
+            }
+        }
+
+        var command = new UpdateVehicleInspectionCommand(
+            vehicleId,
+            inspectionDate,
+            inspectionPassed,
+            documentUrl
+        );
+
+        var result = await _mediator.Send(command);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+
         return Ok(result);
     }
 }

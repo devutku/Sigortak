@@ -24,6 +24,8 @@ public class Vehicle : AuditableEntity, IMultiTenant
     public DateTime? TrafficRegistrationDate { get; set; } // Trafik Tescil Tarihi
     public Enums.VehicleBodyType BodyType { get; set; } = Enums.VehicleBodyType.Sedan;
     public DateTime? InspectionDate { get; set; }
+    public bool? InspectionPassed { get; set; }
+    public string? InspectionDocumentUrl { get; set; }
     public DateTime? InsuranceEndDate { get; set; }
     public bool IsActive { get; set; } = true;
 }

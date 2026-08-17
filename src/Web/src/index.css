@@ -594,7 +594,7 @@ label {
     color: #475569;
 }
 
-input, select {
+input, select, textarea {
     padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -603,7 +603,7 @@ input, select {
     transition: all 0.2s ease;
 }
 
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
     border-color: var(--color-bright-teal);
     box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.1);
 }

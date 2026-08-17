@@ -67,6 +67,8 @@ public class GetVehiclesQueryHandler : IRequestHandler<GetVehiclesQuery, Result<
             ChassisNumber = v.ChassisNumber,
             RegistrationNumber = v.RegistrationNumber,
             InspectionDate = v.InspectionDate,
+            InspectionPassed = v.InspectionPassed,
+            InspectionDocumentUrl = v.InspectionDocumentUrl,
             InsuranceEndDate = v.EndDate,
             PolicyId = v.PolicyId,
             PolicyNumber = v.PolicyNumber,

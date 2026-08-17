@@ -45,6 +45,8 @@ public class ReadDbContext : DbContext
             entity.Property(e => e.OwnerAddress).HasMaxLength(500);
             entity.Property(e => e.UsageType).HasMaxLength(100);
             entity.Property(e => e.TrafficRegistrationDate);
+            entity.Property(e => e.InspectionPassed);
+            entity.Property(e => e.InspectionDocumentUrl).HasMaxLength(500);
         });
     }
 }

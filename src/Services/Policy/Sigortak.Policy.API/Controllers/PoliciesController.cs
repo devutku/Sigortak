@@ -28,7 +28,7 @@ public class PoliciesController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromForm] string policyNumber, [FromForm] string? sbmPolicyNumber, [FromForm] Guid vehicleId, [FromForm] DateTime startDate, [FromForm] DateTime endDate, [FromForm] decimal premium, [FromForm] PolicyType policyType, IFormFile? file)
+    public async Task<IActionResult> Create([FromForm] string policyNumber, [FromForm] string? sbmPolicyNumber, [FromForm] Guid vehicleId, [FromForm] DateTime startDate, [FromForm] DateTime endDate, [FromForm] decimal premium, [FromForm] PolicyType policyType, [FromForm] string? documentUrl, IFormFile? file)
     {
         var command = new CreatePolicyCommand
         {
@@ -38,7 +38,8 @@ public class PoliciesController : ControllerBase
             StartDate = startDate,
             EndDate = endDate,
             Premium = premium,
-            PolicyType = policyType
+            PolicyType = policyType,
+            DocumentUrl = documentUrl ?? string.Empty
         };
 
         if (file != null)

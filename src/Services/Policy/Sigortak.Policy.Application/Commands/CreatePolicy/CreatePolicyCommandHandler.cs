@@ -26,7 +26,7 @@ public class CreatePolicyCommandHandler : IRequestHandler<CreatePolicyCommand, R
 
     public async Task<Result<Guid>> Handle(CreatePolicyCommand request, CancellationToken cancellationToken)
     {
-        string documentUrl = string.Empty;
+        string documentUrl = request.DocumentUrl;
         if (request.FileStream != null && request.FileStream != Stream.Null && !string.IsNullOrEmpty(request.FileName))
         {
             var uniqueFileName = $"{Guid.NewGuid()}_{request.FileName}";

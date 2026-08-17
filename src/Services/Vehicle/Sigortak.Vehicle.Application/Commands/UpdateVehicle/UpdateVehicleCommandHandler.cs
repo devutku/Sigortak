@@ -36,6 +36,8 @@ public class UpdateVehicleCommandHandler : IRequestHandler<UpdateVehicleCommand,
         vehicle.ChassisNumber = request.ChassisNumber;
         vehicle.BodyType = request.BodyType;
         vehicle.InspectionDate = request.InspectionDate;
+        vehicle.InspectionPassed = request.InspectionPassed;
+        vehicle.InspectionDocumentUrl = request.InspectionDocumentUrl;
         vehicle.InsuranceEndDate = request.InsuranceEndDate;
 
         await _vehicleRepository.UpdateAsync(vehicle, cancellationToken);
@@ -55,6 +57,8 @@ public class UpdateVehicleCommandHandler : IRequestHandler<UpdateVehicleCommand,
             vehicle.TrafficRegistrationDate,
             vehicle.BodyType,
             vehicle.InspectionDate,
+            vehicle.InspectionPassed,
+            vehicle.InspectionDocumentUrl,
             vehicle.InsuranceEndDate
         );
         await _kafkaEventBus.PublishAsync(syncEvent, cancellationToken);
