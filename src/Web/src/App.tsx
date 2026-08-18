@@ -1,56 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-interface Vehicle {
-  id: string;
-  plate: string;
-  brand: string;
-  model: string;
-  year: number;
-  ownerId: string;
-  ownerName?: string;
-  ownerTcNo?: string;
-  ownerAddress?: string;
-  usageType?: string;
-  trafficRegistrationDate?: string;
-  bodyType: string;
-  engineNumber?: string;
-  engineCapacity?: string;
-  chassisNumber?: string;
-  registrationNumber?: string;
-  inspectionDate?: string;
-  insuranceEndDate?: string;
-  inspectionRemainingDays?: number;
-  inspectionStatus?: string;
-  insuranceRemainingDays?: number;
-  insuranceStatus?: string;
-  policyId?: string;
-  policyNumber?: string;
-  sbmPolicyNumber?: string;
-  policyStartDate?: string;
-  policyEndDate?: string;
-  policyPremium?: number;
-  policyDocumentUrl?: string;
-}
-
-interface Quote {
-  id: string;
-  vehicleId: string;
-  vehiclePlate: string;
-  vehicleInfo: string;
-  insuranceCompany: string;
-  agentName: string;
-  policyType: number;
-  premium: number;
-  validityDate: string;
-  status: number;
-  immLimit: string;
-  replacementCar: string;
-  deductible: string;
-  glassCoverage: boolean;
-  assistance: boolean;
-  documentUrl?: string;
-}
+import type { Vehicle, Quote } from './types';
+import { MainLayout } from './layouts/MainLayout';
+import { DashboardView } from './modules/dashboard/DashboardView';
+import { VehiclesView } from './modules/vehicles/VehiclesView';
+import { PoliciesView } from './modules/policies/PoliciesView';
+import { InspectionsView } from './modules/inspections/InspectionsView';
+import { QuotesView } from './modules/quotes/QuotesView';
+import { CustomersView } from './modules/customers/CustomersView';
+import { WorkOrdersView } from './modules/workorders/WorkOrdersView';
 
 const GATEWAY_URL = "http://localhost:5000";
 
@@ -86,6 +45,7 @@ export default function App() {
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
 
   const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isWorkOrderModalOpen, setIsWorkOrderModalOpen] = useState(false);
   const [woTitle, setWoTitle] = useState("");
   const [woDescription, setWoDescription] = useState("");
@@ -107,7 +67,6 @@ export default function App() {
   const [vfBrand, setVfBrand] = useState("");
   const [vfModel, setVfModel] = useState("");
   const [showBrandSuggestions, setShowBrandSuggestions] = useState(false);
-  const [selectedCalendarDay, setSelectedCalendarDay] = useState<number | null>(null);
 
   const brandSuggestions = vfBrand.trim() === "" 
     ? CAR_BRANDS 
@@ -152,14 +111,31 @@ export default function App() {
     link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css";
     document.head.appendChild(link);
 
-    if (token) {
-      fetchVehicles();
-    }
-
     return () => {
       document.head.removeChild(link);
     };
-  }, [token]);
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      if (activeMenu === 'quotes' || activeMenu === 'dashboard' || activeMenu === 'calendar') {
+        fetchQuotes();
+      }
+      if (
+        activeMenu === 'vehicles' || 
+        activeMenu === 'dashboard' || 
+        activeMenu === 'calendar' || 
+        activeMenu === 'policies' || 
+        activeMenu === 'inspections' || 
+        activeMenu === 'customers'
+      ) {
+        fetchVehicles();
+      }
+      if (activeMenu === 'workorders') {
+        fetchWorkOrders();
+      }
+    }
+  }, [token, activeMenu]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,7 +157,6 @@ export default function App() {
       setLoginError(err.message);
     }
   };
-
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -235,6 +210,101 @@ export default function App() {
     }
   };
 
+  const mapBackendQuoteToFrontend = (q: any): Quote => {
+    let policyType = 1;
+    if (q.policyType === 'Traffic' || q.policyType === 2) {
+      policyType = 2;
+    }
+    
+    let status = 0;
+    if (q.status === 'Approved' || q.status === 1) {
+      status = 1;
+    } else if (q.status === 'Rejected' || q.status === 2) {
+      status = 2;
+    }
+
+    return {
+      id: q.id,
+      vehicleId: q.vehicleId,
+      vehiclePlate: q.vehiclePlate,
+      vehicleInfo: q.vehicleInfo,
+      insuranceCompany: q.insuranceCompany,
+      agentName: q.agentName,
+      policyType: policyType,
+      premium: q.premium,
+      validityDate: q.validityDate,
+      status: status,
+      immLimit: q.immLimit,
+      replacementCar: q.replacementCarDuration || q.replacementCar || '',
+      deductible: q.exemptStatus || q.deductible || '',
+      glassCoverage: q.glassCovered !== undefined ? q.glassCovered : q.glassCoverage,
+      assistance: q.asstServices === 'Dahil' || q.asstServices === 'true' || q.asstServices === true || q.assistance || false,
+      documentUrl: q.pdfDocumentUrl || q.documentUrl || ''
+    };
+  };
+
+  const fetchQuotes = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/quotes`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.status === 401) {
+        handleLogout();
+        return;
+      }
+      const data = await res.json();
+      if (res.ok && data) {
+        const rawQuotes = data.data || data;
+        const mappedQuotes = Array.isArray(rawQuotes) ? rawQuotes.map(mapBackendQuoteToFrontend) : [];
+        setQuotes(mappedQuotes);
+      }
+    } catch (err) {
+      console.error("Teklifler yüklenemedi", err);
+    }
+  };
+
+  const handleApproveQuote = async (id: string) => {
+    try {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/quotes/${id}/approve`, {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        alert("Teklif başarıyla onaylandı ve poliçeleştirildi!");
+        fetchQuotes();
+        fetchVehicles();
+      } else {
+        const errorText = await res.text();
+        alert("Teklif onaylanamadı: " + errorText);
+      }
+    } catch (err) {
+      console.error("Teklif onay hatası", err);
+    }
+  };
+
+  const handleRejectQuote = async (id: string) => {
+    try {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/quotes/${id}/reject`, {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        alert("Teklif reddedildi.");
+        fetchQuotes();
+      } else {
+        alert("Teklif reddedilemedi.");
+      }
+    } catch (err) {
+      console.error("Teklif ret hatası", err);
+    }
+  };
   const handleCreateWorkOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setWoError("");
@@ -801,934 +871,89 @@ export default function App() {
   }
 
   return (
-    <div className="app-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <div className="logo">
-            <i className="fa-solid fa-car-burst"></i>
-            <span>Sigortak</span>
-          </div>
-          <div className="subtitle-wrapper">
-            <span className="subtitle">Araç Yönetim Paneli</span>
-          </div>
-        </div>
-
-        <nav className="sidebar-menu">
-          <div className="menu-label">Ana Menü</div>
-          <a 
-            href="#" 
-            className={`menu-item ${activeMenu === 'dashboard' ? 'active' : ''}`}
-            onClick={(e) => { e.preventDefault(); setActiveMenu('dashboard'); }}
-          >
-            <i className="fa-solid fa-chart-line"></i> Kontrol Paneli
-          </a>
-
-          <div className="menu-label">Müşteriler</div>
-          <a 
-            href="#" 
-            className={`menu-item ${activeMenu === 'customers' ? 'active' : ''}`}
-            onClick={(e) => { e.preventDefault(); setActiveMenu('customers'); }}
-          >
-            <i className="fa-solid fa-users"></i> Müşteriler
-          </a>
-
-          <div className="menu-label">Servis</div>
-          <a 
-            href="#" 
-            className={`menu-item ${activeMenu === 'vehicles' ? 'active' : ''}`}
-            onClick={(e) => { e.preventDefault(); setActiveMenu('vehicles'); }}
-          >
-            <i className="fa-solid fa-car"></i> Araçlarım
-          </a>
-          <a href="#" className="menu-item" onClick={(e) => e.preventDefault()}><i className="fa-solid fa-sliders"></i> Filo Yönetimi</a>
-          <a href="#" className="menu-item" onClick={(e) => e.preventDefault()}><i className="fa-solid fa-bell"></i> Hatırlatmalar</a>
-          <a 
-            href="#" 
-            className={`menu-item ${activeMenu === 'workorders' ? 'active' : ''}`}
-            onClick={(e) => { e.preventDefault(); setActiveMenu('workorders'); }}
-          >
-            <i className="fa-solid fa-file-invoice"></i> İş Emirleri
-          </a>
-          <a href="#" className="menu-item" onClick={(e) => e.preventDefault()}><i className="fa-solid fa-file-shield"></i> Araç Muayenelerim</a>
-          <a href="#" className="menu-item" onClick={(e) => e.preventDefault()}><i className="fa-solid fa-calendar-days"></i> Takvim</a>
-
-          <div className="menu-label">İşlemler</div>
-          <a href="#" className="menu-item" onClick={(e) => e.preventDefault()}><i className="fa-solid fa-receipt"></i> Teklifler</a>
-          <a href="#" className="menu-item" onClick={(e) => e.preventDefault()}><i className="fa-solid fa-credit-card"></i> Fatura</a>
-        </nav>
-
-        <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '20px' }}>
-          <a 
-            href="#" 
-            className="menu-item" 
-            onClick={(e) => { e.preventDefault(); handleLogout(); }}
-            style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
-          >
-            <i className="fa-solid fa-right-from-bracket" style={{ color: '#ef4444' }}></i> Çıkış Yap
-          </a>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="main-content">
-        <header className="header">
-          <div className="breadcrumb">
-            <i className="fa-solid fa-sidebar-toggle sidebar-trigger"></i>
-            <span>{activeMenu === 'customers' ? 'Müşteriler' : activeMenu === 'workorders' ? 'İş Emirleri' : 'Araçlarım'}</span>
-            <i className="fa-solid fa-chevron-right separator"></i>
-            <span className="active">{activeMenu === 'customers' ? 'Tüm Müşteriler' : activeMenu === 'workorders' ? 'Operasyon Listesi' : 'Tüm Araçlar'}</span>
-          </div>
-
-          <div className="header-right">
-            <div className="rates">
-              <div className="rate-item">
-                <span className="rate-label">$ USD</span>
-                <span className="rate-value">₺47.78 <i className="fa-solid fa-caret-up text-success"></i></span>
-              </div>
-              <div className="rate-item">
-                <span className="rate-label">€ EUR</span>
-                <span className="rate-value">₺55.11 <i className="fa-solid fa-caret-up text-success"></i></span>
-              </div>
-            </div>
-
-            <div className="global-search">
-              <i className="fa-solid fa-magnifying-glass"></i>
-              <input type="text" placeholder="Ara... (Ctrl+K)" />
-            </div>
-
-            <button className="btn btn-primary" onClick={() => setIsPolicyModalOpen(true)}>+ Ekle</button>
-          </div>
-        </header>
-
-        {/* Dashboard View */}
-        {activeMenu === 'dashboard' && (() => {
-          // Calendar variables
-          const today = new Date();
-          const currentYear = today.getFullYear();
-          const currentMonth = today.getMonth();
-          const currentMonthName = today.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-
-          const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
-          // Adjust Sunday (0) to index 6, Monday (1) to index 0, etc.
-          const adjustedFirstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-          const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-          const calendarDays: (number | null)[] = [];
-          for (let i = 0; i < adjustedFirstDayOfWeek; i++) {
-            calendarDays.push(null);
-          }
-          for (let i = 1; i <= daysInMonth; i++) {
-            calendarDays.push(i);
-          }
-
-          const getCalendarEvents = (day: number) => {
-            return vehicles.filter(v => {
-              if (!v.insuranceEndDate) return false;
-              const date = new Date(v.insuranceEndDate);
-              return date.getFullYear() === currentYear && date.getMonth() === currentMonth && date.getDate() === day;
-            });
-          };
-
-          const getInspectionEvents = (day: number) => {
-            return vehicles.filter(v => {
-              if (!v.inspectionDate) return false;
-              const date = new Date(v.inspectionDate);
-              return date.getFullYear() === currentYear && date.getMonth() === currentMonth && date.getDate() === day;
-            });
-          };
-
-          // Pie chart stats
-          const zamaninVarCount = vehicles.filter(v => v.inspectionStatus === 'ZAMANIN VAR' || v.inspectionStatus === 'MUAYENE ZAMANIN VAR').length;
-          const dolmakUzereCount = vehicles.filter(v => v.inspectionStatus === 'MUAYENE DOLMAK ÜZERE' || v.inspectionStatus === 'SİGORTA DOLMAK ÜZERE').length;
-          const dolduCount = vehicles.filter(v => v.inspectionStatus === 'MUAYENE DOLDU' || v.inspectionStatus === 'SİGORTA DOLDU').length;
-          const belirsizCount = vehicles.length - (zamaninVarCount + dolmakUzereCount + dolduCount);
-
-          const totalInspect = vehicles.length || 1;
-          const pZamaninVar = (zamaninVarCount / totalInspect) * 100;
-          const pDolmakUzere = (dolmakUzereCount / totalInspect) * 100;
-          const pDoldu = (dolduCount / totalInspect) * 100;
-
-          const pieChartBackground = `conic-gradient(
-            #0077b6 0% ${pZamaninVar}%,
-            #f8961e ${pZamaninVar}% ${pZamaninVar + pDolmakUzere}%,
-            #ef4444 ${pZamaninVar + pDolmakUzere}% ${pZamaninVar + pDolmakUzere + pDoldu}%,
-            #64748b ${pZamaninVar + pDolmakUzere + pDoldu}% 100%
-          )`;
-
-          return (
-            <div style={{ padding: '20px 0' }}>
-              <h2 style={{ marginBottom: '20px', color: 'var(--color-deep-twilight)' }}>Kontrol Paneli Özeti</h2>
-              
-              {/* Summary Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-                <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
-                  <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Toplam Araç</div>
-                  <div style={{ fontSize: '32px', fontWeight: 700, marginTop: '8px', color: 'var(--color-deep-twilight)' }}>{vehicles.length}</div>
-                </div>
-                <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
-                  <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Aktif Poliçeler</div>
-                  <div style={{ fontSize: '32px', fontWeight: 700, marginTop: '8px', color: 'var(--color-bright-teal)' }}>{vehicles.filter(v => v.policyId).length}</div>
-                </div>
-                <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
-                  <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Bitişi Yaklaşan</div>
-                  <div style={{ fontSize: '32px', fontWeight: 700, marginTop: '8px', color: '#854d0e' }}>
-                    {vehicles.filter(v => v.insuranceStatus === 'DOLMAK ÜZERE' || v.insuranceStatus === 'SİGORTA DOLMAK ÜZERE').length}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid Layout for Pie Chart and Calendar */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
-                
-                {/* Pie Chart Card */}
-                <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-deep-twilight)', marginBottom: '20px', alignSelf: 'flex-start' }}>
-                    <i className="fa-solid fa-chart-pie" style={{ marginRight: '8px', color: 'var(--color-bright-teal)' }}></i>
-                    Muayene Durum Dağılımı
-                  </h3>
-                  
-                  {vehicles.length === 0 ? (
-                    <div style={{ color: '#64748b', margin: '40px 0' }}>Veri bulunmuyor</div>
-                  ) : (
-                    <>
-                      {/* Circle Donut Chart */}
-                      <div style={{
-                        width: '180px',
-                        height: '180px',
-                        borderRadius: '50%',
-                        background: pieChartBackground,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        marginBottom: '24px',
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <div style={{
-                          width: '110px',
-                          height: '110px',
-                          borderRadius: '50%',
-                          backgroundColor: '#ffffff',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>{vehicles.length}</span>
-                          <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px' }}>Araç</span>
-                        </div>
-                      </div>
-
-                      {/* Legend */}
-                      <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#0077b6' }}></div>
-                          <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Zamanın Var ({zamaninVarCount})</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#f8961e' }}></div>
-                          <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Dolmak Üzere ({dolmakUzereCount})</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#ef4444' }}></div>
-                          <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Doldu ({dolduCount})</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#64748b' }}></div>
-                          <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Belirsiz ({belirsizCount})</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Calendar Card */}
-                <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-deep-twilight)', display: 'flex', alignItems: 'center' }}>
-                      <i className="fa-solid fa-calendar-days" style={{ marginRight: '8px', color: 'var(--color-bright-teal)' }}></i>
-                      Sigorta & Muayene Takvimi
-                    </h3>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-bright-teal)', backgroundColor: 'var(--color-light-cyan)', padding: '4px 10px', borderRadius: '20px' }}>
-                      {currentMonthName}
-                    </span>
-                  </div>
-
-                  {/* Calendar Days Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontWeight: 600, fontSize: '0.85rem', color: '#64748b', marginBottom: '10px' }}>
-                    {["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].map(dayName => (
-                      <div key={dayName}>{dayName}</div>
-                    ))}
-                  </div>
-
-                  {/* Calendar Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                    {calendarDays.map((day, idx) => {
-                      if (day === null) {
-                        return <div key={`empty-${idx}`} style={{ height: '42px' }}></div>;
-                      }
-
-                      const isSelected = selectedCalendarDay === day;
-                      const insuranceEvents = getCalendarEvents(day);
-                      const inspectionEvents = getInspectionEvents(day);
-                      const hasEvents = insuranceEvents.length > 0 || inspectionEvents.length > 0;
-
-                      return (
-                        <div
-                          key={`day-${day}`}
-                          onClick={() => setSelectedCalendarDay(isSelected ? null : day)}
-                          style={{
-                            height: '42px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '8px',
-                            border: isSelected ? '2px solid var(--color-bright-teal)' : '1px solid #f1f5f9',
-                            backgroundColor: isSelected ? 'var(--color-light-cyan)' : hasEvents ? '#fffbeb' : '#f8fafc',
-                            cursor: 'pointer',
-                            position: 'relative',
-                            transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) e.currentTarget.style.backgroundColor = '#f1f5f9';
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) e.currentTarget.style.backgroundColor = hasEvents ? '#fffbeb' : '#f8fafc';
-                          }}
-                        >
-                          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: isSelected ? 'var(--color-bright-teal)' : 'var(--color-deep-twilight)' }}>
-                            {day}
-                          </span>
-                          
-                          {/* Event Indicators */}
-                          {hasEvents && (
-                            <div style={{ display: 'flex', gap: '3px', position: 'absolute', bottom: '4px' }}>
-                              {insuranceEvents.length > 0 && (
-                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#ef4444' }} title="Sigorta Bitişi"></div>
-                              )}
-                              {inspectionEvents.length > 0 && (
-                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#f8961e' }} title="Muayene Günü"></div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Selected Day Event Details */}
-                  {selectedCalendarDay !== null && (
-                    <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '8px', borderLeft: '4px solid var(--color-bright-teal)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>{selectedCalendarDay} {currentMonthName} Detayları</span>
-                        <button 
-                          onClick={() => setSelectedCalendarDay(null)}
-                          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px' }}
-                        >
-                          <i className="fa-solid fa-xmark"></i>
-                        </button>
-                      </div>
-                      {(() => {
-                        const ins = getCalendarEvents(selectedCalendarDay);
-                        const insp = getInspectionEvents(selectedCalendarDay);
-                        if (ins.length === 0 && insp.length === 0) {
-                          return <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Bu güne ait herhangi bir hatırlatma bulunmuyor.</div>;
-                        }
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {ins.map(v => (
-                              <div key={`ins-${v.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                                <i className="fa-solid fa-file-shield" style={{ color: '#ef4444' }}></i>
-                                <span><strong>{v.plate}</strong> - Sigorta Poliçesi Sona Eriyor ({v.brand} {v.model})</span>
-                              </div>
-                            ))}
-                            {insp.map(v => (
-                              <div key={`insp-${v.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                                <i className="fa-solid fa-wrench" style={{ color: '#f8961e' }}></i>
-                                <span><strong>{v.plate}</strong> - Muayene Tarihi ({v.brand} {v.model})</span>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-
-            </div>
-          );
-        })()}
-
-        {/* Vehicles View */}
-        {activeMenu === 'vehicles' && (
-          <>
-            <section className="action-bar">
-              <div className="filter-tabs">
-                <button 
-                  className={`tab-btn ${activeFilter === 'active' ? 'active' : ''}`}
-                  onClick={() => setActiveFilter('active')}
-                >
-                  Aktif
-                </button>
-                <button 
-                  className={`tab-btn ${activeFilter === 'archived' ? 'active' : ''}`}
-                  onClick={() => setActiveFilter('archived')}
-                >
-                  Arşivlenmiş
-                </button>
-              </div>
-
-              <div className="search-and-buttons">
-                <div className="search-box">
-                  <i className="fa-solid fa-magnifying-glass"></i>
-                  <input 
-                    type="text" 
-                    placeholder="Plaka, marka, model, Şase No ile ara..." 
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                <div className="view-modes">
-                  <button 
-                    className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                    onClick={() => setViewMode('list')}
-                  >
-                    <i className="fa-solid fa-list"></i>
-                  </button>
-                  <button 
-                    className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                    onClick={() => setViewMode('grid')}
-                  >
-                    <i className="fa-solid fa-grip"></i>
-                  </button>
-                </div>
-
-                <button className="btn btn-primary" onClick={() => setIsVehicleModalOpen(true)}>
-                  <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i>Yeni Araç Ekle
-                </button>
-              </div>
-            </section>
-
-            {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div className="spinner"></div></div>
-            ) : viewMode === 'list' ? (
-              // List layout matching Web_old
-              <div className="table-container">
-                <table className="vehicles-table">
-                  <thead>
-                    <tr>
-                      <th>Plaka</th>
-                      <th>Araç Bilgisi</th>
-                      <th>Muayene Kalan Gün</th>
-                      <th>Muayene Durumu</th>
-                      <th>Sigorta Durumu</th>
-                      <th>Kasa Tipi</th>
-                      <th style={{ textAlign: 'right' }}>Aksiyon</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredVehicles.map(v => (
-                      <tr key={v.id}>
-                        <td>
-                          <div className="plate-badge">{v.plate}</div>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.year} {v.brand} {v.model}</div>
-                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Şase No: {v.ownerId.slice(0, 10)}...</div>
-                        </td>
-                        <td>
-                          {v.inspectionRemainingDays !== undefined ? `${v.inspectionRemainingDays} gün` : '- gün'}
-                        </td>
-                        <td>
-                          {getStatusBadge(v.inspectionStatus)}
-                        </td>
-                        <td>
-                          {getStatusBadge(v.insuranceStatus)}
-                        </td>
-                        <td>
-                          {v.bodyType || 'Sedan'}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            {v.policyId ? (
-                              <>
-                                {v.policyDocumentUrl && (
-                                  <a 
-                                    href={`${GATEWAY_URL}${v.policyDocumentUrl}`} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="btn btn-secondary" 
-                                    style={{ padding: '6px 10px', fontSize: '12px', background: '#f1f5f9' }}
-                                  >
-                                    <i className="fa-solid fa-file-pdf"></i> PDF
-                                  </a>
-                                )}
-                                <button 
-                                  onClick={() => {
-                                    setRenewVehicleId(v.id);
-                                    setRenewPolicyNo(v.policyNumber + "-R");
-                                    setIsRenewModalOpen(true);
-                                  }}
-                                  className="btn btn-primary" 
-                                  style={{ padding: '6px 10px', fontSize: '12px' }}
-                                >
-                                  <i className="fa-solid fa-arrows-rotate"></i> Yenile
-                                </button>
-                              </>
-                            ) : (
-                              <button 
-                                onClick={() => {
-                                  setSelectedVehicleId(v.id);
-                                  setIsPolicyModalOpen(true);
-                                }}
-                                className="btn btn-primary" 
-                                style={{ padding: '6px 10px', fontSize: '12px' }}
-                              >
-                                + Poliçe Ekle
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              // Grid Card layout
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
-                {filteredVehicles.map(v => (
-                  <div 
-                    key={v.id} 
-                    onClick={() => setDetailVehicle(v)}
-                    style={{
-                      padding: '20px',
-                      background: '#fff',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.25s ease',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)';
-                      (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 24px rgba(0,119,182,0.12)';
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-bright-teal)';
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-                      (e.currentTarget as HTMLElement).style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
-                      (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-color)';
-                    }}
-                  >
-                    {/* Card Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                      <div className="plate-badge">{v.plate}</div>
-                      {getStatusBadge(v.insuranceStatus)}
-                    </div>
-
-                    {/* Vehicle Info */}
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-deep-twilight)', marginBottom: '4px' }}>
-                      {v.year} {v.brand} {v.model}
-                    </h3>
-                    {v.ownerName && (
-                      <div style={{ fontSize: '12px', color: '#0077b6', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <i className="fa-solid fa-user" style={{ fontSize: '10px' }}></i>{v.ownerName}
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#64748b', fontSize: '12px', marginBottom: '14px' }}>
-                      <span><i className="fa-solid fa-car-side" style={{ marginRight: '4px' }}></i>{v.bodyType || 'Sedan'}</span>
-                      {v.engineCapacity && (
-                        <span><i className="fa-solid fa-gauge-high" style={{ marginRight: '4px' }}></i>{v.engineCapacity}L</span>
-                      )}
-                      {v.inspectionRemainingDays !== undefined && (
-                        <span><i className="fa-solid fa-clipboard-check" style={{ marginRight: '4px' }}></i>{v.inspectionRemainingDays} gün</span>
-                      )}
-                    </div>
-
-                    {/* Policy mini summary */}
-                    {v.policyId ? (
-                      <div style={{ background: 'var(--badge-zamanin-var-bg)', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.policyNumber}</div>
-                          <div style={{ color: '#64748b', marginTop: '2px' }}>{v.insuranceRemainingDays} gün kaldı</div>
-                        </div>
-                        <i className="fa-solid fa-shield-halved" style={{ fontSize: '20px', color: 'var(--color-bright-teal)' }}></i>
-                      </div>
-                    ) : (
-                      <div style={{ background: '#fef2f2', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#991b1b', fontWeight: 500 }}>Aktif poliçe yok</span>
-                        <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '16px', color: '#dc2626' }}></i>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Customers View */}
-        {activeMenu === 'customers' && (() => {
-          // Group vehicles by ownerName
-          const groups: { [name: string]: Vehicle[] } = {};
-          vehicles.forEach(v => {
-            const owner = v.ownerName || 'Bilinmeyen Müşteri';
-            if (!groups[owner]) {
-              groups[owner] = [];
-            }
-            groups[owner].push(v);
-          });
-
-          const customersList = Object.keys(groups).map(name => ({
-            name,
-            vehicles: groups[name]
-          })).filter(c => 
-            c.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
-            c.vehicles.some(v => v.plate.toLowerCase().includes(customerSearchTerm.toLowerCase()))
-          );
-
-          return (
-            <>
-              <section className="action-bar">
-                <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>
-                  Müşteri Listesi
-                </div>
-
-                <div className="search-and-buttons" style={{ marginLeft: 'auto' }}>
-                  <div className="search-box">
-                    <i className="fa-solid fa-magnifying-glass"></i>
-                    <input 
-                      type="text" 
-                      placeholder="Müşteri adı veya Plaka ile ara..." 
-                      value={customerSearchTerm}
-                      onChange={e => setCustomerSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div className="spinner"></div></div>
-              ) : customersList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  <i className="fa-solid fa-users" style={{ fontSize: '48px', marginBottom: '16px', color: '#cbd5e1' }}></i>
-                  <p>Müşteri bulunamadı.</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
-                  {customersList.map((customer, idx) => (
-                    <div 
-                      key={idx}
-                      className="glass-panel"
-                      style={{
-                        padding: '24px',
-                        background: '#fff',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                      }}
-                    >
-                      {/* Customer Info Header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--color-light-cyan)',
-                            color: 'var(--color-bright-teal)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '18px',
-                            fontWeight: 700
-                          }}>
-                            {customer.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-deep-twilight)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              {customer.name}
-                              {customer.vehicles[0]?.ownerTcNo && (
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
-                                  T.C.: {customer.vehicles[0].ownerTcNo}
-                                </span>
-                              )}
-                            </h3>
-                            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '4px' }}>
-                              <span style={{ fontSize: '12px', color: '#64748b' }}><i className="fa-solid fa-car" style={{ marginRight: '4px' }}></i>Toplam Araç: {customer.vehicles.length}</span>
-                              {customer.vehicles[0]?.ownerAddress && (
-                                <span style={{ fontSize: '12px', color: '#64748b' }}><i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }}></i>{customer.vehicles[0].ownerAddress}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Vehicles & Policy Details grid */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {customer.vehicles.map(v => (
-                          <div 
-                            key={v.id}
-                            style={{
-                              background: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '10px',
-                              padding: '16px',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                              {/* Plate and Brand Model */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                                <div className="plate-badge" style={{ fontSize: '0.95rem', padding: '3px 10px' }}>{v.plate}</div>
-                                <div>
-                                  <span style={{ fontWeight: 700, color: 'var(--color-deep-twilight)', fontSize: '0.95rem' }}>{v.year} {v.brand} {v.model}</span>
-                                  <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>({v.bodyType || 'Sedan'})</span>
-                                </div>
-                              </div>
-
-                              {/* Action Buttons for this specific vehicle */}
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                {v.policyId ? (
-                                  <>
-                                    {v.policyDocumentUrl && (
-                                      <a 
-                                        href={`${GATEWAY_URL}${v.policyDocumentUrl}`} 
-                                        target="_blank" 
-                                        rel="noreferrer" 
-                                        className="btn btn-secondary" 
-                                        style={{ padding: '6px 10px', fontSize: '12px', background: '#fff', border: '1px solid #cbd5e1' }}
-                                      >
-                                        <i className="fa-solid fa-file-pdf"></i> PDF
-                                      </a>
-                                    )}
-                                    <button 
-                                      onClick={() => {
-                                        setRenewVehicleId(v.id);
-                                        setRenewPolicyNo(v.policyNumber + "-R");
-                                        setIsRenewModalOpen(true);
-                                      }}
-                                      className="btn btn-primary" 
-                                      style={{ padding: '6px 10px', fontSize: '12px' }}
-                                    >
-                                      <i className="fa-solid fa-arrows-rotate"></i> Poliçe Yenile
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button 
-                                    onClick={() => {
-                                      setSelectedVehicleId(v.id);
-                                      setIsPolicyModalOpen(true);
-                                    }}
-                                    className="btn btn-primary" 
-                                    style={{ padding: '6px 10px', fontSize: '12px' }}
-                                  >
-                                    + Poliçe Ekle
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Technical Specs Needed for Policy (Şasi No, Ruhsat No, Motor No, Kullanım Tarzı, vb.) */}
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                              gap: '12px',
-                              marginTop: '14px',
-                              paddingTop: '14px',
-                              borderTop: '1px dashed #e2e8f0'
-                            }}>
-                              <div>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Şasi Numarası</span>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-deep-twilight)', fontFamily: 'monospace' }}>{v.chassisNumber || 'Belirtilmemiş'}</span>
-                              </div>
-                              <div>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Ruhsat Numarası</span>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.registrationNumber || 'Belirtilmemiş'}</span>
-                              </div>
-                              <div>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Motor (Hacim / No)</span>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-deep-twilight)' }}>
-                                  {v.engineCapacity ? `${v.engineCapacity}L` : '-'} / {v.engineNumber || '-'}
-                                </span>
-                              </div>
-                              <div>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Kullanım / Tescil</span>
-                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-deep-twilight)' }}>
-                                  {v.usageType || '-'} {v.trafficRegistrationDate ? `(${new Date(v.trafficRegistrationDate).toLocaleDateString('tr-TR')})` : ''}
-                                </span>
-                              </div>
-                              <div>
-                                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Aktif Poliçe Durumu</span>
-                                {v.policyId ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontSize: '12px', color: '#059669', fontWeight: 700 }}>
-                                      <i className="fa-solid fa-shield-halved" style={{ marginRight: '4px' }}></i>
-                                      {v.policyNumber} ({v.insuranceRemainingDays} gün kaldı)
-                                    </span>
-                                    {v.sbmPolicyNumber && (
-                                      <span style={{ fontSize: '10px', color: '#64748b' }}>
-                                        SBM: {v.sbmPolicyNumber}
-                                      </span>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: 700 }}>
-                                    <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '4px' }}></i>
-                                    Poliçe Yok
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          );
-        })()}
-
-        {/* WorkOrders View */}
-        {activeMenu === 'workorders' && (
-          <>
-            <section className="action-bar">
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>
-                Operasyonel İş Emirleri
-              </div>
-
-              <button className="btn btn-primary" onClick={() => setIsWorkOrderModalOpen(true)} style={{ marginLeft: 'auto' }}>
-                <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i>Yeni İş Emri Ekle
-              </button>
-            </section>
-
-            {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div className="spinner"></div></div>
-            ) : workOrders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                <i className="fa-solid fa-file-invoice" style={{ fontSize: '48px', marginBottom: '16px', color: '#cbd5e1' }}></i>
-                <p>Kayıtlı iş emri bulunamadı.</p>
-              </div>
-            ) : (
-              <div className="table-container" style={{ marginTop: '20px' }}>
-                <table className="vehicles-table">
-                  <thead>
-                    <tr>
-                      <th>İş Emri No</th>
-                      <th>Başlık</th>
-                      <th>Tür</th>
-                      <th>Öncelik</th>
-                      <th>Durum</th>
-                      <th>Oluşturulma Tarihi</th>
-                      <th style={{ textAlign: 'right' }}>Aksiyonlar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workOrders.map((wo: any) => (
-                      <tr key={wo.id}>
-                        <td>
-                          <div style={{ fontWeight: 700, color: 'var(--color-deep-twilight)' }}>{wo.orderNumber}</div>
-                        </td>
-                        <td>
-                          <div style={{ fontWeight: 600, color: '#1e293b' }}>{wo.title}</div>
-                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{wo.description}</div>
-                          {wo.specialNotes && (
-                            <div style={{ fontSize: '11px', color: '#ef4444', fontStyle: 'italic', marginTop: '4px' }}>Not: {wo.specialNotes}</div>
-                          )}
-                        </td>
-                        <td>
-                          {(() => {
-                            switch (wo.orderType) {
-                              case 'ClaimFile': return <span className="badge" style={{ background: '#ffedd5', color: '#ea580c' }}>Hasar Dosyası Açma</span>;
-                              case 'ExpertAssignment': return <span className="badge" style={{ background: '#dbeafe', color: '#2563eb' }}>Eksper Atama</span>;
-                              case 'PolicyRenewal': return <span className="badge" style={{ background: '#d1fae5', color: '#059669' }}>Poliçe Yenileme</span>;
-                              case 'CollectionAndCancellation': return <span className="badge" style={{ background: '#f3f4f6', color: '#4b5563' }}>Tahsilat & İptal</span>;
-                              default: return <span className="badge">{wo.orderType}</span>;
-                            }
-                          })()}
-                        </td>
-                        <td>
-                          {(() => {
-                            switch (wo.priority) {
-                              case 'Low': return <span style={{ color: '#64748b', fontWeight: 600 }}>Düşük</span>;
-                              case 'Medium': return <span style={{ color: '#d97706', fontWeight: 600 }}>Orta</span>;
-                              case 'High': return <span style={{ color: '#dc2626', fontWeight: 600 }}>Yüksek</span>;
-                              case 'Critical': return <span style={{ color: '#7f1d1d', fontWeight: 700, textTransform: 'uppercase' }}>⚠️ Kritik</span>;
-                              default: return <span>{wo.priority}</span>;
-                            }
-                          })()}
-                        </td>
-                        <td>
-                          {(() => {
-                            switch (wo.status) {
-                              case 'New': return <span className="badge" style={{ background: '#eff6ff', color: '#1d4ed8' }}>Yeni</span>;
-                              case 'Assigned': return <span className="badge" style={{ background: '#faf5ff', color: '#6d28d9' }}>Atandı</span>;
-                              case 'InProgress': return <span className="badge" style={{ background: '#fffbeb', color: '#b45309' }}>İşlemde</span>;
-                              case 'Completed': return <span className="badge" style={{ background: '#ecfdf5', color: '#047857' }}>Tamamlandı</span>;
-                              case 'Cancelled': return <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c' }}>İptal Edildi</span>;
-                              default: return <span className="badge">{wo.status}</span>;
-                            }
-                          })()}
-                        </td>
-                        <td>
-                          {new Date(wo.createdAt).toLocaleDateString('tr-TR')} {new Date(wo.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                            <button 
-                              onClick={() => handlePrintWorkOrder(wo)} 
-                              className="btn btn-secondary" 
-                              style={{ padding: '4px 8px', fontSize: '11px', background: '#f1f5f9', color: '#1e293b', border: '1px solid #cbd5e1' }}
-                              title="Yazdır / PDF Kaydet"
-                            >
-                              <i className="fa-solid fa-print"></i> Yazdır
-                            </button>
-                            {wo.status !== 'Completed' && wo.status !== 'Cancelled' && (
-                              <>
-                                <button 
-                                  onClick={() => handleUpdateWorkOrderStatus(wo.id, 3)} 
-                                  className="btn btn-secondary" 
-                                  style={{ padding: '4px 8px', fontSize: '11px', background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }}
-                                  title="İşleme Al"
-                                >
-                                  İşlemde
-                                </button>
-                                <button 
-                                  onClick={() => handleUpdateWorkOrderStatus(wo.id, 4)} 
-                                  className="btn btn-primary" 
-                                  style={{ padding: '4px 8px', fontSize: '11px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}
-                                  title="Tamamla"
-                                >
-                                  Tamamla
-                                </button>
-                                <button 
-                                  onClick={() => handleUpdateWorkOrderStatus(wo.id, 5)} 
-                                  className="btn btn-secondary" 
-                                  style={{ padding: '4px 8px', fontSize: '11px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }}
-                                  title="İptal Et"
-                                >
-                                  İptal
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        )}
-      </main>
+    <MainLayout activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout}>
+      {activeMenu === 'dashboard' && (
+        <DashboardView 
+          vehicles={vehicles} 
+          quotes={quotes} 
+          setActiveMenu={setActiveMenu} 
+          onApproveQuote={handleApproveQuote}
+        />
+      )}
+      {activeMenu === 'calendar' && (
+        <DashboardView 
+          vehicles={vehicles} 
+          quotes={quotes} 
+          setActiveMenu={setActiveMenu} 
+          onApproveQuote={handleApproveQuote}
+        />
+      )}
+      {activeMenu === 'customers' && (
+        <CustomersView
+          vehicles={vehicles}
+          customerSearchTerm={customerSearchTerm}
+          setCustomerSearchTerm={setCustomerSearchTerm}
+          loading={loading}
+          GATEWAY_URL={GATEWAY_URL}
+          setRenewVehicleId={setRenewVehicleId}
+          setRenewPolicyNo={setRenewPolicyNo}
+          setIsRenewModalOpen={setIsRenewModalOpen}
+          setSelectedVehicleId={setSelectedVehicleId}
+          setIsPolicyModalOpen={setIsPolicyModalOpen}
+        />
+      )}
+      {activeMenu === 'vehicles' && (
+        <VehiclesView
+          filteredVehicles={filteredVehicles}
+          activeFilter={activeFilter}
+          setActiveFilter={setActiveFilter}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          setIsVehicleModalOpen={setIsVehicleModalOpen}
+          setRenewVehicleId={setRenewVehicleId}
+          setRenewPolicyNo={setRenewPolicyNo}
+          setIsRenewModalOpen={setIsRenewModalOpen}
+          setSelectedVehicleId={setSelectedVehicleId}
+          setIsPolicyModalOpen={setIsPolicyModalOpen}
+          setDetailVehicle={setDetailVehicle}
+          loading={loading}
+          GATEWAY_URL={GATEWAY_URL}
+          getStatusBadge={getStatusBadge}
+        />
+      )}
+      {activeMenu === 'policies' && (
+        <PoliciesView
+          vehicles={vehicles}
+          onOpenRenewModal={(vehicleId, policyNumber) => {
+            setRenewVehicleId(vehicleId);
+            setRenewPolicyNo(policyNumber + "-R");
+            setIsRenewModalOpen(true);
+          }}
+          GATEWAY_URL={GATEWAY_URL}
+        />
+      )}
+      {activeMenu === 'inspections' && (
+        <InspectionsView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
+      )}
+      {activeMenu === 'workorders' && (
+        <WorkOrdersView
+          workOrders={workOrders}
+          setIsWorkOrderModalOpen={setIsWorkOrderModalOpen}
+          handlePrintWorkOrder={handlePrintWorkOrder}
+          handleUpdateWorkOrderStatus={handleUpdateWorkOrderStatus}
+          loading={loading}
+        />
+      )}
+      {activeMenu === 'quotes' && (
+        <QuotesView
+          quotes={quotes}
+          onApproveQuote={handleApproveQuote}
+          onRejectQuote={handleRejectQuote}
+          GATEWAY_URL={GATEWAY_URL}
+        />
+      )}
 
       {/* New Work Order Modal */}
       {isWorkOrderModalOpen && (
@@ -1770,7 +995,7 @@ export default function App() {
                   value={woDescription} 
                   onChange={e => setWoDescription(e.target.value)} 
                   placeholder="İş emri detay açıklamasını yazın..."
-                  style={{ background: '#fff', color: '#1e293b', minHeight: '80px', fontFamily: 'inherit' }}
+                  style={{ background: '#fff', color: '#1e293b', minHeight: '80px', fontFamily: 'inherit', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px' }}
                   required 
                 />
               </div>
@@ -2013,84 +1238,51 @@ export default function App() {
         </div>
       )}
 
-      {/* Vehicle Detail Modal */}
+      {/* Detail Vehicle Modal */}
       {detailVehicle && (
         <div 
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(3, 4, 94, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
           onClick={() => setDetailVehicle(null)}
         >
           <div 
-            style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '540px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Detail Header */}
-            <div style={{ background: 'var(--color-deep-twilight)', color: '#fff', padding: '24px 28px', borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div className="plate-badge" style={{ background: '#fff', color: 'var(--color-deep-twilight)', fontSize: '14px', padding: '6px 14px', marginBottom: '12px' }}>{detailVehicle.plate}</div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 700 }}>{detailVehicle.year} {detailVehicle.brand} {detailVehicle.model}</h2>
-                <p style={{ color: 'var(--color-frosted-blue)', fontSize: '13px', marginTop: '6px' }}>
-                  <i className="fa-solid fa-user" style={{ marginRight: '4px' }}></i>
-                  {detailVehicle.ownerName || 'Bilinmiyor'} 
-                  {detailVehicle.ownerTcNo && ` (T.C.: ${detailVehicle.ownerTcNo})`} &bull; {detailVehicle.bodyType}
-                </p>
-                {detailVehicle.ownerAddress && (
-                  <p style={{ color: 'var(--color-frosted-blue)', fontSize: '12px', marginTop: '4px' }}>
-                    <i className="fa-solid fa-location-dot" style={{ marginRight: '4px' }}></i>
-                    {detailVehicle.ownerAddress}
-                  </p>
-                )}
+            {/* Modal Header */}
+            <div style={{ background: 'var(--color-deep-twilight)', color: '#fff', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="plate-badge">{detailVehicle.plate}</div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Araç Detayı</h3>
               </div>
               <button 
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '30px', height: '30px', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 onClick={() => setDetailVehicle(null)}
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
 
-            {/* Detail Body */}
-            <div style={{ padding: '24px 28px' }}>
-              {/* Vehicle Technical Info */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Motor</div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-deep-twilight)', marginTop: '2px' }}>
-                    {detailVehicle.engineCapacity ? `${detailVehicle.engineCapacity} L` : '-'}
-                  </div>
+            {/* Modal Body */}
+            <div style={{ padding: '24px' }}>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)', marginBottom: '8px' }}>
+                {detailVehicle.year} {detailVehicle.brand} {detailVehicle.model}
+              </h4>
+
+              {/* Owner Specs */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
+                <div>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Araç Sahibi</span>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{detailVehicle.ownerName || 'Bilinmiyor'}</span>
                 </div>
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Motor No</div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-deep-twilight)', marginTop: '4px', wordBreak: 'break-all' }}>
-                    {detailVehicle.engineNumber || '-'}
+                {detailVehicle.ownerTcNo && (
+                  <div>
+                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>T.C. Kimlik No</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{detailVehicle.ownerTcNo}</span>
                   </div>
-                </div>
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Şasi No</div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-deep-twilight)', marginTop: '4px', wordBreak: 'break-all' }}>
-                    {detailVehicle.chassisNumber || '-'}
-                  </div>
-                </div>
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ruhsat No</div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-deep-twilight)', marginTop: '4px' }}>
-                    {detailVehicle.registrationNumber || '-'}
-                  </div>
-                </div>
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Kullanım Tarzı</div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-deep-twilight)', marginTop: '4px' }}>
-                    {detailVehicle.usageType || '-'}
-                  </div>
-                </div>
-                <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tescil Tarihi</div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-deep-twilight)', marginTop: '4px' }}>
-                    {detailVehicle.trafficRegistrationDate ? new Date(detailVehicle.trafficRegistrationDate).toLocaleDateString('tr-TR') : '-'}
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* Status Cards Row */}
+              {/* Technical Specs */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
                 <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -2541,6 +1733,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
+    </MainLayout>
   );
 }

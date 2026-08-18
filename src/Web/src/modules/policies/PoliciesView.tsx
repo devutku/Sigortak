@@ -1,16 +1,13 @@
-import React from 'react';
-import { Vehicle } from '../../types';
+import type { Vehicle } from '../../types';
 
 interface PoliciesViewProps {
   vehicles: Vehicle[];
-  onOpenPolicyModal: (vehicleId: string) => void;
   onOpenRenewModal: (vehicleId: string, policyNumber: string) => void;
   GATEWAY_URL: string;
 }
 
 export const PoliciesView: React.FC<PoliciesViewProps> = ({
   vehicles,
-  onOpenPolicyModal,
   onOpenRenewModal,
   GATEWAY_URL
 }) => {
@@ -20,13 +17,13 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
     switch (status) {
       case 'AKTIF':
       case 'SIGORTA AKTIF':
-        return <span className="status-badge status-success">AKTIF</span>;
+        return <span className="badge badge-zamanin-var">AKTIF</span>;
       case 'SIGORTA DOLMAK ÜZERE':
-        return <span className="status-badge status-warning">DOLMAK ÜZERE</span>;
+        return <span className="badge badge-dolmak-uzere">DOLMAK ÜZERE</span>;
       case 'SIGORTA DOLDU':
-        return <span className="status-badge status-danger">SÜRESİ DOLDU</span>;
+        return <span className="badge badge-doldu">SÜRESİ DOLDU</span>;
       default:
-        return <span className="status-badge status-neutral">BILGI YOK</span>;
+        return <span className="badge" style={{ background: '#e2e8f0', color: '#64748b' }}>BILGI YOK</span>;
     }
   };
 
@@ -47,15 +44,15 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
           </p>
         </div>
       ) : (
-        <div className="table-responsive">
-          <table className="table">
+        <div className="table-container">
+          <table className="vehicles-table">
             <thead>
               <tr>
                 <th>Plaka</th>
-                <th>Arac Marka / Model</th>
+                <th>Arac Detayi</th>
                 <th>Police No / SBM No</th>
                 <th>Tür</th>
-                <th>Baslangic / Bitis</th>
+                <th>Süreç (Baslangic / Bitis)</th>
                 <th>Prim</th>
                 <th>Durum</th>
                 <th>Belge</th>
@@ -65,11 +62,16 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
             <tbody>
               {vehiclesWithPolicies.map(v => (
                 <tr key={v.id}>
-                  <td><strong>{v.plate}</strong></td>
-                  <td>{v.brand} {v.model} ({v.year})</td>
+                  <td>
+                    <div className="plate-badge" style={{ display: 'inline-block' }}>{v.plate}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.brand} {v.model}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{v.year} model</div>
+                  </td>
                   <td>
                     <div><strong>{v.policyNumber}</strong></div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{v.sbmPolicyNumber || '-'}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>SBM: {v.sbmPolicyNumber || '-'}</div>
                   </td>
                   <td>
                     <span style={{ 
@@ -84,14 +86,14 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
                     </span>
                   </td>
                   <td>
-                    <div style={{ fontSize: '13px' }}>
+                    <div style={{ fontSize: '13px', color: '#334155' }}>
                       {v.policyStartDate ? new Date(v.policyStartDate).toLocaleDateString('tr-TR') : '-'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                       Bitis: {v.policyEndDate ? new Date(v.policyEndDate).toLocaleDateString('tr-TR') : '-'}
                     </div>
                   </td>
-                  <td><strong>{v.policyPremium ? `${v.policyPremium.toLocaleString('tr-TR')} ₺` : '-'}</strong></td>
+                  <td><strong style={{ color: 'var(--color-bright-teal)' }}>{v.policyPremium ? `${v.policyPremium.toLocaleString('tr-TR')} ₺` : '-'}</strong></td>
                   <td>{getStatusBadge(v.insuranceStatus)}</td>
                   <td>
                     {v.policyDocumentUrl ? (
@@ -100,19 +102,20 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
                         target="_blank" 
                         rel="noreferrer"
                         title="PDF Indir"
-                        style={{ color: '#ef4444', fontSize: '18px' }}
+                        className="btn btn-secondary"
+                        style={{ padding: '6px 10px', fontSize: '12px', background: '#f1f5f9', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                       >
-                        <i className="fa-solid fa-file-pdf"></i>
+                        <i className="fa-solid fa-file-pdf" style={{ color: '#dc2626' }}></i> Belge
                       </a>
                     ) : '-'}
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <button 
-                      className="btn btn-secondary" 
+                      className="btn btn-primary" 
                       onClick={() => onOpenRenewModal(v.id, v.policyNumber || '')}
                       style={{ padding: '6px 12px', fontSize: '12px' }}
                     >
-                      <i className="fa-solid fa-arrows-rotate"></i> Yenile
+                      <i className="fa-solid fa-arrows-rotate" style={{ marginRight: '4px' }}></i> Yenile
                     </button>
                   </td>
                 </tr>

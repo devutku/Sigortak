@@ -1,5 +1,4 @@
-import React from 'react';
-import { Quote } from '../../types';
+import type { Quote } from '../../types';
 
 interface QuotesViewProps {
   quotes: Quote[];

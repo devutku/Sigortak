@@ -1,5 +1,4 @@
-import React from 'react';
-import { Vehicle } from '../../types';
+import type { Vehicle } from '../../types';
 
 interface InspectionsViewProps {
   vehicles: Vehicle[];
@@ -11,13 +10,13 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
     switch (status) {
       case 'ZAMANIN VAR':
       case 'MUAYENE ZAMANIN VAR':
-        return <span className="status-badge status-success">GECERLI</span>;
+        return <span className="badge badge-zamanin-var">GECERLI</span>;
       case 'MUAYENE DOLMAK ÜZERE':
-        return <span className="status-badge status-warning">DOLMAK ÜZERE</span>;
+        return <span className="badge badge-dolmak-uzere">DOLMAK ÜZERE</span>;
       case 'MUAYENE DOLDU':
-        return <span className="status-badge status-danger">SÜRESİ DOLDU</span>;
+        return <span className="badge badge-doldu">SÜRESİ DOLDU</span>;
       default:
-        return <span className="status-badge status-neutral">MUAYENE YOK</span>;
+        return <span className="badge" style={{ background: '#e2e8f0', color: '#64748b' }}>MUAYENE YOK</span>;
     }
   };
 
@@ -29,69 +28,81 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
         </h3>
       </div>
 
-      <div className="table-responsive">
-        <table className="table">
+      <div className="table-container">
+        <table className="vehicles-table">
           <thead>
             <tr>
               <th>Plaka</th>
               <th>Arac Detayi</th>
-              <th>Muayene Kaydi Var mi?</th>
-              <th>Muayeneden Gecti mi?</th>
+              <th>Muayene Kaydi</th>
+              <th>Muayene Sonucu</th>
               <th>Son Muayene Tarihi</th>
               <th>Kalan Süre</th>
               <th>Durum</th>
-              <th>Muayene Belgesi</th>
+              <th style={{ textAlign: 'right' }}>Muayene Belgesi</th>
             </tr>
           </thead>
           <tbody>
             {vehicles.map(v => (
               <tr key={v.id}>
-                <td><strong>{v.plate}</strong></td>
-                <td>{v.brand} {v.model} ({v.year})</td>
+                <td>
+                  <div className="plate-badge" style={{ display: 'inline-block' }}>{v.plate}</div>
+                </td>
+                <td>
+                  <div style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.brand} {v.model}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{v.year} model</div>
+                </td>
                 <td>
                   {v.inspectionDate ? (
-                    <span style={{ color: '#10b981', fontWeight: 600 }}>
-                      <i className="fa-solid fa-circle-check"></i> Evet
+                    <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
+                      <i className="fa-solid fa-circle-check"></i> Kayitli
                     </span>
                   ) : (
-                    <span style={{ color: '#64748b', fontWeight: 600 }}>
-                      <i className="fa-solid fa-circle-xmark"></i> Hayir
+                    <span style={{ color: '#64748b', fontWeight: 600, fontSize: '13px' }}>
+                      <i className="fa-solid fa-circle-xmark"></i> Kayit Yok
                     </span>
                   )}
                 </td>
                 <td>
                   {v.inspectionDate ? (
                     v.inspectionPassed !== false ? (
-                      <span className="status-badge status-success">GECTI</span>
+                      <span className="badge" style={{ background: '#ecfdf5', color: '#047857' }}>GECTI</span>
                     ) : (
-                      <span className="status-badge status-danger">KALDI</span>
+                      <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c' }}>KALDI</span>
                     )
                   ) : (
                     <span style={{ color: '#94a3b8' }}>-</span>
                   )}
                 </td>
-                <td>{v.inspectionDate ? new Date(v.inspectionDate).toLocaleDateString('tr-TR') : '-'}</td>
+                <td>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#334155' }}>
+                    {v.inspectionDate ? new Date(v.inspectionDate).toLocaleDateString('tr-TR') : '-'}
+                  </div>
+                </td>
                 <td>
                   {v.inspectionRemainingDays !== undefined ? (
-                    <span style={{ fontWeight: 600, color: v.inspectionRemainingDays < 30 ? '#ef4444' : '#334155' }}>
+                    <span style={{ fontWeight: 600, color: v.inspectionRemainingDays < 30 ? '#ef4444' : '#334155', fontSize: '13px' }}>
                       {v.inspectionRemainingDays} gün kaldi
                     </span>
-                  ) : '-'}
+                  ) : (
+                    <span style={{ color: '#94a3b8' }}>-</span>
+                  )}
                 </td>
                 <td>{getStatusBadge(v.inspectionStatus)}</td>
-                <td>
+                <td style={{ textAlign: 'right' }}>
                   {v.inspectionDocumentUrl ? (
                     <a 
                       href={`${GATEWAY_URL}${v.inspectionDocumentUrl}`} 
                       target="_blank" 
                       rel="noreferrer"
-                      style={{ color: '#ef4444', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 10px', fontSize: '12px', background: '#f1f5f9', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                       title="Muayene Raporunu Indir"
                     >
-                      <i className="fa-solid fa-file-pdf"></i> Muayene Belgesi
+                      <i className="fa-solid fa-file-pdf" style={{ color: '#dc2626' }}></i> Belge
                     </a>
                   ) : (
-                    <span style={{ color: '#cbd5e1', fontSize: '13px' }}>Kayit Yok</span>
+                    <span style={{ color: '#cbd5e1', fontSize: '12px' }}>Belge Yok</span>
                   )}
                 </td>
               </tr>

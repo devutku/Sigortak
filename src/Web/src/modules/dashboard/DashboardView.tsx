@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import { Vehicle, Quote } from '../../types';
+import type { Vehicle, Quote } from '../../types';
 
 interface DashboardViewProps {
   vehicles: Vehicle[];
   quotes: Quote[];
   setActiveMenu: (menu: any) => void;
   onApproveQuote: (id: string) => Promise<void>;
-  onRejectQuote: (id: string) => Promise<void>;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   vehicles,
   quotes,
   setActiveMenu,
-  onApproveQuote,
-  onRejectQuote
+  onApproveQuote
 }) => {
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number | null>(null);
 
