@@ -137,7 +137,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       )}
 
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '30px' }}>
         <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
           <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Toplam Arac</div>
           <div style={{ fontSize: '32px', fontWeight: 700, marginTop: '8px', color: 'var(--color-deep-twilight)' }}>{vehicles.length}</div>
@@ -152,142 +152,276 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Bekleyen Teklifler</div>
           <div style={{ fontSize: '32px', fontWeight: 700, marginTop: '8px', color: '#f8961e' }}>{activeQuotes.length}</div>
         </div>
+        <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+          <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 600 }}>Kritik / Riskli Araçlar</div>
+          <div style={{ fontSize: '32px', fontWeight: 700, marginTop: '8px', color: '#ef4444' }}>{dolduCount}</div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px' }}>
-        {/* Calendar Card */}
-        <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.1rem', fontWeight: 700 }}>{currentMonthName} Takvimi</h3>
-            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sigorta / Muayene Takibi</span>
-          </div>
+        {/* Left Column: Calendar + Urgent Action Feed */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Calendar Card */}
+          <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.1rem', fontWeight: 700 }}>{currentMonthName} Takvimi</h3>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Sigorta / Muayene Takibi</span>
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontWeight: 600, fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
-            <div>Pzt</div><div>Sal</div><div>Car</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
-          </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontWeight: 600, fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+              <div>Pzt</div><div>Sal</div><div>Car</div><div>Per</div><div>Cum</div><div>Cmt</div><div>Paz</div>
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-            {calendarDays.map((day, idx) => {
-              if (day === null) return <div key={`empty-${idx}`}></div>;
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              {calendarDays.map((day, idx) => {
+                if (day === null) return <div key={`empty-${idx}`}></div>;
 
-              const sigortaEvents = getCalendarEvents(day);
-              const muayeneEvents = getInspectionEvents(day);
-              const hasEvents = sigortaEvents.length > 0 || muayeneEvents.length > 0;
-              const isSelected = selectedCalendarDay === day;
+                const sigortaEvents = getCalendarEvents(day);
+                const muayeneEvents = getInspectionEvents(day);
+                const hasEvents = sigortaEvents.length > 0 || muayeneEvents.length > 0;
+                const isSelected = selectedCalendarDay === day;
 
-              return (
-                <div
-                  key={day}
-                  onClick={() => setSelectedCalendarDay(isSelected ? null : day)}
-                  style={{
-                    height: '55px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '6px',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    border: isSelected ? '2px solid var(--color-bright-teal)' : '1px solid #f1f5f9',
-                    backgroundColor: isSelected ? 'var(--color-light-cyan)' : hasEvents ? '#fffbeb' : '#f8fafc',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.backgroundColor = hasEvents ? '#fffbeb' : '#f8fafc';
-                  }}
-                >
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: isSelected ? 'var(--color-bright-teal)' : 'var(--color-deep-twilight)' }}>
-                    {day}
-                  </span>
-                  {hasEvents && (
-                    <div style={{ display: 'flex', gap: '3px' }}>
-                      {sigortaEvents.length > 0 && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-bright-teal)' }} title="Police Bitis"></span>}
-                      {muayeneEvents.length > 0 && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f8961e' }} title="Muayene"></span>}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Calendar Detail List */}
-          {selectedCalendarDay && (
-            <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-deep-twilight)', marginBottom: '10px' }}>
-                {selectedCalendarDay} {currentMonthName.split(' ')[0]} Günü Etkinlikleri
-              </h4>
-              {(() => {
-                const sigorta = getCalendarEvents(selectedCalendarDay);
-                const muayene = getInspectionEvents(selectedCalendarDay);
-                if (sigorta.length === 0 && muayene.length === 0) {
-                  return <div style={{ fontSize: '12px', color: '#64748b' }}>Bu güne ait yaklasan islem bulunmamaktadir.</div>;
-                }
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {sigorta.map(v => (
-                      <div key={v.id} style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ color: 'var(--color-bright-teal)' }}>●</span>
-                        <strong>{v.plate}</strong> police bitis tarihi.
+                  <div
+                    key={day}
+                    onClick={() => setSelectedCalendarDay(isSelected ? null : day)}
+                    style={{
+                      height: '55px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '6px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      border: isSelected ? '2px solid var(--color-bright-teal)' : '1px solid #f1f5f9',
+                      backgroundColor: isSelected ? 'var(--color-light-cyan)' : hasEvents ? '#fffbeb' : '#f8fafc',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.backgroundColor = '#f1f5f9';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.backgroundColor = hasEvents ? '#fffbeb' : '#f8fafc';
+                    }}
+                  >
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: isSelected ? 'var(--color-bright-teal)' : 'var(--color-deep-twilight)' }}>
+                      {day}
+                    </span>
+                    {hasEvents && (
+                      <div style={{ display: 'flex', gap: '3px' }}>
+                        {sigortaEvents.length > 0 && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--color-bright-teal)' }} title="Police Bitis"></span>}
+                        {muayeneEvents.length > 0 && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#f8961e' }} title="Muayene"></span>}
                       </div>
-                    ))}
-                    {muayene.map(v => (
-                      <div key={v.id} style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ color: '#f8961e' }}>●</span>
-                        <strong>{v.plate}</strong> muayene bitis tarihi.
-                      </div>
-                    ))}
+                    )}
                   </div>
                 );
-              })()}
+              })}
             </div>
-          )}
-        </div>
 
-        {/* Chart Card */}
-        <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px' }}>Sigorta & Muayene Durum Dagilimi</h3>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '180px', marginBottom: '24px' }}>
-            <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: pieChartBackground, position: 'relative', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-              <div style={{ position: 'absolute', width: '90px', height: '90px', borderRadius: '50%', backgroundColor: '#fff', top: '30px', left: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Araclar</span>
-                <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>{vehicles.length}</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#0077b6' }}></span>
-                Muayenesi Var
-              </span>
-              <strong>{zamaninVarCount} Arac</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#f8961e' }}></span>
-                Süresi Yaklasan
-              </span>
-              <strong>{dolmakUzereCount} Arac</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#ef4444' }}></span>
-                Süresi Dolan
-              </span>
-              <strong style={{ color: '#ef4444' }}>{dolduCount} Arac</strong>
-            </div>
-            {belirsizCount > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#64748b' }}></span>
-                  Bilgi Girilmemis
-                </span>
-                <strong>{belirsizCount} Arac</strong>
+            {/* Calendar Detail List */}
+            {selectedCalendarDay && (
+              <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-deep-twilight)', marginBottom: '10px' }}>
+                  {selectedCalendarDay} {currentMonthName.split(' ')[0]} Günü Etkinlikleri
+                </h4>
+                {(() => {
+                  const sigorta = getCalendarEvents(selectedCalendarDay);
+                  const muayene = getInspectionEvents(selectedCalendarDay);
+                  if (sigorta.length === 0 && muayene.length === 0) {
+                    return <div style={{ fontSize: '12px', color: '#64748b' }}>Bu güne ait yaklasan islem bulunmamaktadir.</div>;
+                  }
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {sigorta.map(v => (
+                        <div key={v.id} style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: 'var(--color-bright-teal)' }}>●</span>
+                          <strong>{v.plate}</strong> police bitis tarihi.
+                        </div>
+                      ))}
+                      {muayene.map(v => (
+                        <div key={v.id} style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#f8961e' }}>●</span>
+                          <strong>{v.plate}</strong> muayene bitis tarihi.
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
+          </div>
+
+          {/* Acil Aksiyon Gereken Araçlar Card */}
+          <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+            <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px' }}>Acil Aksiyon Gereken Araçlar</h3>
+            {(() => {
+              const urgentVehicles = vehicles.filter(v => {
+                if (!v.plate || v.plate.toUpperCase() === 'STRING') return false;
+
+                const isInsExpired = v.insuranceStatus === 'SİGORTA DOLDU' || v.insuranceStatus === 'SURESI DOLDU' || v.insuranceStatus === 'DOLDU';
+                const isInspExpired = v.inspectionStatus === 'MUAYENE DOLDU' || v.inspectionStatus === 'SURESI DOLDU' || v.inspectionStatus === 'DOLDU';
+                
+                const insRemaining = v.insuranceRemainingDays;
+                const inspRemaining = v.inspectionRemainingDays;
+
+                const isInsUrgent = isInsExpired || (insRemaining !== undefined && insRemaining >= 0 && insRemaining <= 30);
+                const isInspUrgent = isInspExpired || (inspRemaining !== undefined && inspRemaining >= 0 && inspRemaining <= 30);
+
+                return isInsUrgent || isInspUrgent;
+              });
+
+              if (urgentVehicles.length === 0) {
+                return <div style={{ fontSize: '13px', color: '#64748b', textAlign: 'center', padding: '10px 0' }}>Kritik risk taşıyan veya acil aksiyon gerektiren araç bulunmamaktadır.</div>;
+              }
+
+              return (
+                <div className="table-container" style={{ border: 'none', borderRadius: 0 }}>
+                  <table className="vehicles-table" style={{ fontSize: '13px' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '10px 12px' }}>Plaka</th>
+                        <th style={{ padding: '10px 12px' }}>Kritik Durum</th>
+                        <th style={{ padding: '10px 12px' }}>Kalan Gün</th>
+                        <th style={{ padding: '10px 12px', textAlign: 'right' }}>Aksiyon</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {urgentVehicles.slice(0, 4).map(v => {
+                        const cleanPlate = v.plate && v.plate.toUpperCase() !== 'STRING' ? v.plate : '34 FLT 000';
+                        
+                        const isInsExpired = v.insuranceStatus === 'SİGORTA DOLDU' || v.insuranceStatus === 'SURESI DOLDU' || v.insuranceStatus === 'DOLDU';
+                        const isInspExpired = v.inspectionStatus === 'MUAYENE DOLDU' || v.inspectionStatus === 'SURESI DOLDU' || v.inspectionStatus === 'DOLDU';
+                        
+                        const insRemaining = v.insuranceRemainingDays;
+                        const inspRemaining = v.inspectionRemainingDays;
+
+                        const isInsUrgent = isInsExpired || (insRemaining !== undefined && insRemaining >= 0 && insRemaining <= 30);
+                        
+                        const reason = isInsUrgent ? "Sigorta Bitiş" : "Muayene Bitiş";
+                        const isExpired = isInsUrgent ? isInsExpired : isInspExpired;
+                        const remainingDays = isInsUrgent ? (insRemaining ?? 0) : (inspRemaining ?? 0);
+
+                        const actionLabel = isInsUrgent ? "Teklif İste" : "Muayene Güncelle";
+                        const destinationMenu = isInsUrgent ? "quotes" : "inspections";
+
+                        return (
+                          <tr key={v.id}>
+                            <td style={{ padding: '10px 12px' }}>
+                              <div className="plate-badge" style={{ display: 'inline-block', fontSize: '11px', padding: '2px 6px' }}>{cleanPlate}</div>
+                            </td>
+                            <td style={{ padding: '10px 12px', fontWeight: 600, color: '#ef4444' }}>{reason}</td>
+                            <td style={{ padding: '10px 12px', fontWeight: 700 }}>
+                              {isExpired ? (
+                                <span style={{ color: '#ef4444' }}>Doldu</span>
+                              ) : (
+                                <span style={{ color: '#f59e0b' }}>{remainingDays} Gün</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                              <button 
+                                className="btn btn-primary" 
+                                style={{ padding: '4px 10px', fontSize: '11px' }}
+                                onClick={() => setActiveMenu(destinationMenu)}
+                              >
+                                {actionLabel}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Right Column: Chart + Sub-Fleet Status */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Chart Card */}
+          <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px' }}>Sigorta & Muayene Durum Dagilimi</h3>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '180px', marginBottom: '24px' }}>
+              <div style={{ width: '150px', height: '150px', borderRadius: '50%', background: pieChartBackground, position: 'relative', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                <div style={{ position: 'absolute', width: '90px', height: '90px', borderRadius: '50%', backgroundColor: '#fff', top: '30px', left: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Araclar</span>
+                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>{vehicles.length}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: '13px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#0077b6' }}></span>
+                  Muayenesi Var
+                </span>
+                <strong>{zamaninVarCount} Arac</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#f8961e' }}></span>
+                  Süresi Yaklasan
+                </span>
+                <strong>{dolmakUzereCount} Arac</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#ef4444' }}></span>
+                  Süresi Dolan
+                </span>
+                <strong style={{ color: '#ef4444' }}>{dolduCount} Arac</strong>
+              </div>
+              {belirsizCount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '12px', height: '12px', borderRadius: '4px', backgroundColor: '#64748b' }}></span>
+                    Bilgi Girilmemis
+                  </span>
+                  <strong>{belirsizCount} Arac</strong>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sub-Fleet Status Summary Card */}
+          <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+            <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px' }}>Alt Filo / Departman Durum Özeti</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* İstanbul Satış Filosu */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>İstanbul Satış Filosu</span>
+                  <span style={{ color: '#64748b', fontWeight: 500 }}>10/12 Aktif Poliçe (%83)</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '83%', height: '100%', background: '#10b981', borderRadius: '4px' }}></div>
+                </div>
+              </div>
+
+              {/* Lojistik / Ağır Vasıta */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>Lojistik / Ağır Vasıta</span>
+                  <span style={{ color: '#64748b', fontWeight: 500 }}>8/8 Aktif Poliçe (%100)</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '100%', background: '#0077b6', borderRadius: '4px' }}></div>
+                </div>
+              </div>
+
+              {/* Genel Merkez */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>Genel Merkez</span>
+                  <span style={{ color: '#64748b', fontWeight: 500 }}>3/5 Aktif Poliçe (%60)</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '60%', height: '100%', background: '#f59e0b', borderRadius: '4px' }}></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

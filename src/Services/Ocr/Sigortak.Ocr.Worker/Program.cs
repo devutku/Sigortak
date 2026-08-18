@@ -20,6 +20,7 @@ try
     // OCR Parser & Storage
     builder.Services.AddSingleton<OcrParser>();
     builder.Services.AddSingleton<MinioStorageService>();
+    builder.Services.AddSingleton<Sigortak.Ocr.Worker.Services.IPolicyOcrService, Sigortak.Ocr.Worker.Services.PolicyOcrService>();
 
     // Kafka EventBus
     builder.Services.AddKafkaEventBus(settings =>

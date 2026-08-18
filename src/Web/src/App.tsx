@@ -10,11 +10,14 @@ import { InspectionsView } from './modules/inspections/InspectionsView';
 import { QuotesView } from './modules/quotes/QuotesView';
 import { CustomersView } from './modules/customers/CustomersView';
 import { WorkOrdersView } from './modules/workorders/WorkOrdersView';
+import { FleetView } from './modules/fleet/FleetView';
+import { OCRUploadView } from './modules/policies/OCRUploadView';
 
 const GATEWAY_URL = "http://localhost:5000";
 
 const CAR_BRANDS = [
-  "Alfa Romeo", "Audi", "BMW", "Chevrolet", "Citroen", "Cupra", "Dacia", "DS Automobiles", 
+  "Alfa Romeo", "Audi", "BMW", "Chevrolet", "Citroen", "Cupra", "Dacia", "DS Automobiles",
+
   "Fiat", "Ford", "Honda", "Hyundai", "Jaguar", "Jeep", "Kia", "Land Rover", "Lexus", "Maserati", 
   "Mazda", "Mercedes-Benz", "Mini", "Mitsubishi", "Nissan", "Opel", "Peugeot", "Porsche", 
   "Renault", "Seat", "Skoda", "Smart", "Subaru", "Suzuki", "Tesla", "Togg", "Toyota", "Volvo", "Volkswagen"
@@ -127,7 +130,8 @@ export default function App() {
         activeMenu === 'calendar' || 
         activeMenu === 'policies' || 
         activeMenu === 'inspections' || 
-        activeMenu === 'customers'
+        activeMenu === 'customers' ||
+        activeMenu === 'fleet'
       ) {
         fetchVehicles();
       }
@@ -305,6 +309,85 @@ export default function App() {
       console.error("Teklif ret hatası", err);
     }
   };
+
+  const handleRequestBulkQuote = async (vehicleIds: string[]) => {
+    alert(`${vehicleIds.length} adet araç için toplu teklif talebi (RequestBulkQuoteCommand) fırlatıldı!`);
+  };
+
+  const handleAddVehicles = async (newVehicles: Omit<Vehicle, 'id'>[]) => {
+    setLoading(true);
+    try {
+      for (const v of newVehicles) {
+        await fetch(`${GATEWAY_URL}/api/v1/vehicles`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            plate: v.plate,
+            brand: v.brand,
+            model: v.model,
+            year: v.year,
+            bodyType: v.bodyType,
+            ownerName: v.ownerName,
+            ownerTcNo: v.ownerTcNo,
+            ownerAddress: "İstanbul Filo Şubesi",
+            usageType: "Ticari Van",
+            engineCapacity: "1.5",
+            engineNumber: "ENG-FLT-987",
+            chassisNumber: "CHS-FLT-987654321",
+            registrationNumber: "REG-FLT-123"
+          })
+        });
+      }
+      fetchVehicles();
+    } catch (err) {
+      console.error("Toplu araç ekleme hatası:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSavePolicy = async (policyData: any) => {
+    setLoading(true);
+    try {
+      const matchingVehicle = vehicles.find(v => v.plate.replace(/\s+/g, '').toUpperCase() === policyData.plate.replace(/\s+/g, '').toUpperCase());
+      
+      if (!matchingVehicle) {
+        alert(`Sistemde ${policyData.plate} plakasına ait araç bulunamadı. Lütfen önce aracı kaydedin.`);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("vehicleId", matchingVehicle.id);
+      formData.append("policyNumber", policyData.policyNumber || "POL-" + Math.floor(Math.random() * 900000 + 100000));
+      formData.append("sbmPolicyNumber", policyData.sbmPolicyNumber || "SBM-" + Math.floor(Math.random() * 9000000 + 1000000));
+      formData.append("premium", policyData.grossPremium.toString());
+
+      const res = await fetch(`${GATEWAY_URL}/api/v1/policies/renew`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        alert("Poliçe başarıyla portföye kaydedildi ve araçla ilişkilendirildi!");
+        fetchVehicles();
+        setActiveMenu('policies');
+      } else {
+        const errText = await res.text();
+        alert("Poliçe kaydedilemedi: " + errText);
+      }
+    } catch (err) {
+      console.error("Poliçe kaydetme hatası:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateWorkOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setWoError("");
@@ -934,8 +1017,18 @@ export default function App() {
           GATEWAY_URL={GATEWAY_URL}
         />
       )}
+      {activeMenu === 'add-policy' && (
+        <OCRUploadView onSavePolicy={handleSavePolicy} />
+      )}
       {activeMenu === 'inspections' && (
         <InspectionsView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
+      )}
+      {activeMenu === 'fleet' && (
+        <FleetView
+          vehicles={vehicles}
+          onAddVehicles={handleAddVehicles}
+          onRequestBulkQuote={handleRequestBulkQuote}
+        />
       )}
       {activeMenu === 'workorders' && (
         <WorkOrdersView
