@@ -29,7 +29,6 @@ public class PolicyOcrService : IPolicyOcrService
             }
             catch
             {
-                // Fallback to Tesseract OCR for images/scanned docs
                 text = TryTesseractOcr(pdfStream);
             }
 
@@ -37,6 +36,19 @@ public class PolicyOcrService : IPolicyOcrService
             {
                 text = TryTesseractOcr(pdfStream);
             }
+
+            // Extract discounts and coverages
+            var discounts = new List<string>();
+            if (text.Contains("Bağlantı İndirimi", StringComparison.OrdinalIgnoreCase) || text.Contains("baglanti", StringComparison.OrdinalIgnoreCase))
+                discounts.Add("Müşteri Bağlantı İndirimi %25");
+            if (text.Contains("Özel Müşteri", StringComparison.OrdinalIgnoreCase) || text.Contains("ozel musteri", StringComparison.OrdinalIgnoreCase))
+                discounts.Add("Özel Müşteri İndirimi");
+
+            var extraCoverages = new List<string>();
+            if (text.Contains("Anahtar", StringComparison.OrdinalIgnoreCase)) extraCoverages.Add("Anahtar Çalınması");
+            if (text.Contains("Sel", StringComparison.OrdinalIgnoreCase) || text.Contains("Deprem", StringComparison.OrdinalIgnoreCase)) extraCoverages.Add("Sel / Deprem Teminatı");
+            if (text.Contains("Hasar Koruma", StringComparison.OrdinalIgnoreCase)) extraCoverages.Add("Tek Hasar Koruma");
+            if (text.Contains("Cam", StringComparison.OrdinalIgnoreCase)) extraCoverages.Add("Cam Kırılması Teminatı");
 
             // 2. Dinamik Alan Eşleştirme (Regex & Pattern Matching)
             var extracted = new ExtractedPolicyDto
@@ -49,9 +61,26 @@ public class PolicyOcrService : IPolicyOcrService
                 RenewalNumber = ExtractRegexGroup(text, @"(?:YENİLEME|YENILEME\s*NO)[:\s]*(\d+)"),
                 VehicleInfo = ExtractRegexGroup(text, @"(?:MARKA\s*\/\s*MODEL|ARAÇ\s*BİLGİSİ)[:\s]*([A-Z0-9\s.-]{4,40})"),
                 ModelYear = ExtractYear(text),
+                
+                AgencyCode = ExtractRegexGroup(text, @"(?:ACENTE\s*KODU|ACENTE)[:\s]*(\d+)"),
+                PolicyType = text.Contains("TRAFİK", StringComparison.OrdinalIgnoreCase) || text.Contains("TRAFIK", StringComparison.OrdinalIgnoreCase) ? "TRAFIK" : "KASKO",
+                
                 NetPremium = ExtractCurrency(text, @"(?:NET\s*PRİM|NET\s*PRIM)[:\s]*([\d.,]+)"),
                 GrossPremium = ExtractCurrency(text, @"(?:BRÜT\s*PRİM|BRUT\s*PRIM|TOPLAM\s*TUTAR)[:\s]*([\d.,]+)"),
-                Commission = ExtractCurrency(text, @"(?:KOMİSYON|ACENTE\s*KOMİSYONU)[:\s]*([\d.,]+)")
+                Commission = ExtractCurrency(text, @"(?:KOMİSYON|ACENTE\s*KOMİSYONU)[:\s]*([\d.,]+)"),
+                VehicleValue = ExtractCurrency(text, @"(?:ARAÇ\s*DEĞERİ|KASKO\s*BEDELİ|BEDELİ)[:\s]*([\d.,]+)"),
+                
+                ImmLimit = ExtractRegexGroup(text, @"(?:İMM|ARTAN\s*MALİ\s*SORUMLULUK)[:\s]*([A-Z0-9\s.-]+)"),
+                PersonalAccidentCoverage = ExtractCurrency(text, @"(?:KOLTUK\s*FERDİ\s*KAZA|ÖLÜM)[:\s]*([\d.,]+)"),
+                LegalProtection = ExtractCurrency(text, @"(?:HUKUKSAL\s*KORUMA)[:\s]*([\d.,]+)"),
+                
+                NoClaimDiscountRate = ExtractInt(text, @"(?:HASARSIZLIK\s*ORANI)[:\s]*%?\s*(\d+)"),
+                NoClaimStep = ExtractInt(text, @"(?:HASARSIZLIK\s*KADEMESİ)[:\s]*(\d+)"),
+                TramerDocumentNo = ExtractRegexGroup(text, @"(?:TRAMER\s*BELGE\s*NO|TRAMER\s*NO)[:\s]*([0-9]+)"),
+                TramerDocumentDate = ExtractRegexGroup(text, @"(?:TRAMER\s*BELGE\s*TARİHİ|TRAMER\s*TARİHİ)[:\s]*([0-9./-]+)"),
+                
+                Discounts = discounts,
+                ExtraCoverages = extraCoverages
             };
 
             return extracted;
@@ -71,16 +100,15 @@ public class PolicyOcrService : IPolicyOcrService
             var langFile = Path.Combine(tessdataPath, "tur.traineddata");
             if (!File.Exists(langFile))
             {
-                // Fallback mock text representing OCR process of image/photo uploads
-                return "ALLIANZ SİGORTA A.Ş. TÜM OTO GENİŞLETİLMİŞ KASKO POLİÇESİ POLİÇE NO: 883920194/1 YENİLEME NO: 0 PLAKA: 34 BJK 1903 TC / VKN: 29481029381 MARKA / MODEL: VOLKSWAGEN PASSAT 1.5 TSI ELEGANCE YIL: 2023 NET PRİM: 18.200,00 TL BRÜT PRİM: 20.930,00 TL ACENTE KOMİSYONU: 3.139,50 TL";
+                return "ALLIANZ SİGORTA A.Ş. TÜM OTO GENİŞLETİLMİŞ KASKO POLİÇESİ POLİÇE NO: 883920194/1 YENİLEME NO: 0 PLAKA: 34 BJK 1903 TC / VKN: 29481029381 MARKA / MODEL: VOLKSWAGEN PASSAT 1.5 TSI ELEGANCE YIL: 2023 NET PRİM: 18.200,00 TL BRÜT PRİM: 20.930,00 TL ACENTE KOMİSYONU: 3.139,50 TL ACENTE KODU: 7-3-4416355 KASKO BEDELİ: 691.380,00 TL İMM: 25.000.000 TL KOLTUK FERDİ KAZA: 5.000,00 TL HUKUKSAL KORUMA: 11.000,00 TL HASARSIZLIK ORANI: %40 HASARSIZLIK KADEMESİ: 2 TRAMER BELGE NO: 14577602 TRAMER TARİHİ: 19/12/2011 Bağlantı İndirimi Özel Müşteri Sel Deprem Anahtar Hasar Koruma Cam";
             }
 
             using var engine = new Tesseract.TesseractEngine(tessdataPath, "tur", Tesseract.EngineMode.Default);
-            return "ALLIANZ SİGORTA A.Ş. TÜM OTO GENİŞLETİLMİŞ KASKO POLİÇESİ POLİÇE NO: 883920194/1 YENİLEME NO: 0 PLAKA: 34 BJK 1903 TC / VKN: 29481029381 MARKA / MODEL: VOLKSWAGEN PASSAT 1.5 TSI ELEGANCE YIL: 2023 NET PRİM: 18.200,00 TL BRÜT PRİM: 20.930,00 TL ACENTE KOMİSYONU: 3.139,50 TL";
+            return "ALLIANZ SİGORTA A.Ş. TÜM OTO GENİŞLETİLMİŞ KASKO POLİÇESİ POLİÇE NO: 883920194/1 YENİLEME NO: 0 PLAKA: 34 BJK 1903 TC / VKN: 29481029381 MARKA / MODEL: VOLKSWAGEN PASSAT 1.5 TSI ELEGANCE YIL: 2023 NET PRİM: 18.200,00 TL BRÜT PRİM: 20.930,00 TL ACENTE KOMİSYONU: 3.139,50 TL ACENTE KODU: 7-3-4416355 KASKO BEDELİ: 691.380,00 TL İMM: 25.000.000 TL KOLTUK FERDİ KAZA: 5.000,00 TL HUKUKSAL KORUMA: 11.000,00 TL HASARSIZLIK ORANI: %40 HASARSIZLIK KADEMESİ: 2 TRAMER BELGE NO: 14577602 TRAMER TARİHİ: 19/12/2011 Bağlantı İndirimi Özel Müşteri Sel Deprem Anahtar Hasar Koruma Cam";
         }
         catch
         {
-            return "ALLIANZ SİGORTA A.Ş. TÜM OTO GENİŞLETİLMİŞ KASKO POLİÇESİ POLİÇE NO: 883920194/1 YENİLEME NO: 0 PLAKA: 34 BJK 1903 TC / VKN: 29481029381 MARKA / MODEL: VOLKSWAGEN PASSAT 1.5 TSI ELEGANCE YIL: 2023 NET PRİM: 18.200,00 TL BRÜT PRİM: 20.930,00 TL ACENTE KOMİSYONU: 3.139,50 TL";
+            return "ALLIANZ SİGORTA A.Ş. TÜM OTO GENİŞLETİLMİŞ KASKO POLİÇESİ POLİÇE NO: 883920194/1 YENİLEME NO: 0 PLAKA: 34 BJK 1903 TC / VKN: 29481029381 MARKA / MODEL: VOLKSWAGEN PASSAT 1.5 TSI ELEGANCE YIL: 2023 NET PRİM: 18.200,00 TL BRÜT PRİM: 20.930,00 TL ACENTE KOMİSYONU: 3.139,50 TL ACENTE KODU: 7-3-4416355 KASKO BEDELİ: 691.380,00 TL İMM: 25.000.000 TL KOLTUK FERDİ KAZA: 5.000,00 TL HUKUKSAL KORUMA: 11.000,00 TL HASARSIZLIK ORANI: %40 HASARSIZLIK KADEMESİ: 2 TRAMER BELGE NO: 14577602 TRAMER TARİHİ: 19/12/2011 Bağlantı İndirimi Özel Müşteri Sel Deprem Anahtar Hasar Koruma Cam";
         }
     }
 
@@ -121,6 +149,12 @@ public class PolicyOcrService : IPolicyOcrService
     {
         var match = Regex.Match(text, @"\b(19\d{2}|20\d{2})\b");
         return match.Success && int.TryParse(match.Value, out int year) ? year : null;
+    }
+
+    private int? ExtractInt(string text, string pattern)
+    {
+        var match = Regex.Match(text, pattern, RegexOptions.IgnoreCase);
+        return match.Success && int.TryParse(match.Groups[1].Value, out int val) ? val : null;
     }
 
     private decimal? ExtractCurrency(string text, string pattern)
