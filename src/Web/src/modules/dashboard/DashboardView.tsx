@@ -31,6 +31,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const dolmakUzereCount = vehicles.filter(v => v.inspectionStatus === 'MUAYENE DOLMAK ÜZERE' || v.inspectionStatus === 'SİGORTA DOLMAK ÜZERE').length;
   const dolduCount = vehicles.filter(v => v.inspectionStatus === 'MUAYENE DOLDU' || v.inspectionStatus === 'SİGORTA DOLDU').length;
   const belirsizCount = vehicles.length - (zamaninVarCount + dolmakUzereCount + dolduCount);
+  const missingInspectionCount = vehicles.filter(v => !v.inspectionDate).length;
 
   const totalInspect = vehicles.length || 1;
   const pZamaninVar = (zamaninVarCount / totalInspect) * 100;
@@ -82,6 +83,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     <div style={{ padding: '20px 0' }}>
       <h2 style={{ marginBottom: '20px', color: 'var(--color-deep-twilight)' }}>Kontrol Paneli Özeti</h2>
       
+      {/* Compliance / TÜVTÜRK Muayene Alert Banner */}
+      {missingInspectionCount > 0 && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.06)',
+          border: '1px solid rgba(239, 68, 68, 0.15)',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#b91c1c' }}>
+            <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '24px' }}></i>
+            <div>
+              <strong style={{ display: 'block', fontSize: '14px', marginBottom: '2px' }}>Kritik Risk Uyarısı: Muayenesi Eksik Araçlar Mevcut!</strong>
+              <span style={{ fontSize: '13px', opacity: 0.9 }}>
+                Portföyünüzde TÜVTÜRK muayene kaydı bulunmayan <strong>{missingInspectionCount}</strong> araç tespit edildi. Kazalarda hasar ödemelerinin ret veya rücu riski, ayrıca trafikten men ve ceza alma riski bulunmaktadır.
+              </span>
+            </div>
+          </div>
+          <button 
+            className="btn" 
+            onClick={() => setActiveMenu('inspections')}
+            style={{ 
+              background: '#ef4444', 
+              color: '#fff', 
+              border: 'none', 
+              padding: '8px 16px', 
+              borderRadius: '8px', 
+              fontSize: '13px', 
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Muayeneleri Düzenle
+          </button>
+        </div>
+      )}
+
       {/* Active Quotes Warning Notifications */}
       {activeQuotes.length > 0 && (
         <div style={{ marginBottom: '25px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -229,20 +271,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   const sigorta = getCalendarEvents(selectedCalendarDay);
                   const muayene = getInspectionEvents(selectedCalendarDay);
                   if (sigorta.length === 0 && muayene.length === 0) {
-                    return <div style={{ fontSize: '12px', color: '#64748b' }}>Bu güne ait yaklasan islem bulunmamaktadir.</div>;
+                    return <div style={{ fontSize: '12px', color: '#64748b' }}>Bu güne ait yaklaşan işlem bulunmamaktadır.</div>;
                   }
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {sigorta.map(v => (
                         <div key={v.id} style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ color: 'var(--color-bright-teal)' }}>●</span>
-                          <strong>{v.plate}</strong> police bitis tarihi.
+                           <strong>{v.plate}</strong> poliçe bitiş tarihi.
                         </div>
                       ))}
                       {muayene.map(v => (
                         <div key={v.id} style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ color: '#f8961e' }}>●</span>
-                          <strong>{v.plate}</strong> muayene bitis tarihi.
+                           <strong>{v.plate}</strong> muayene bitiş tarihi.
                         </div>
                       ))}
                     </div>

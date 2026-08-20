@@ -34,4 +34,12 @@ public class ExtractedPolicyDto
     public List<string> Discounts { get; set; } = new();
     public List<string> ExtraCoverages { get; set; } = new();
     public string? RawText { get; set; }
+
+    // Owner and vehicle ruhsat details (Extracted)
+    public string? OwnerName { get; set; }
+    public string? OwnerAddress { get; set; }
+    public string? UsageType { get; set; }
+    public string? EngineNumber { get; set; }
+    public string? ChassisNumber { get; set; }
+    public string? DainiMurtehin { get; set; }
 }

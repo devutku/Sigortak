@@ -57,7 +57,24 @@ public class RenewPolicyCommandHandler : IRequestHandler<RenewPolicyCommand, Res
             Premium = request.Premium,
             DocumentUrl = documentUrl,
             IsActive = true,
-            PolicyType = request.PolicyType
+            PolicyType = request.PolicyType,
+
+            // Extended Mapping
+            CompanyName = request.CompanyName,
+            RenewalNumber = request.RenewalNumber,
+            AgencyCode = request.AgencyCode,
+            NetPremium = request.NetPremium,
+            Commission = request.Commission,
+            VehicleValue = request.VehicleValue,
+            ImmLimit = request.ImmLimit,
+            PersonalAccidentCoverage = request.PersonalAccidentCoverage,
+            LegalProtection = request.LegalProtection,
+            NoClaimDiscountRate = request.NoClaimDiscountRate,
+            NoClaimStep = request.NoClaimStep,
+            TramerDocumentNo = request.TramerDocumentNo,
+            TramerDocumentDate = request.TramerDocumentDate?.ToUniversalTime(),
+            Discounts = request.Discounts,
+            ExtraCoverages = request.ExtraCoverages
         };
 
         await _policyRepository.CreateAsync(policy, cancellationToken);

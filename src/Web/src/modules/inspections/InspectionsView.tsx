@@ -10,7 +10,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
     switch (status) {
       case 'ZAMANIN VAR':
       case 'MUAYENE ZAMANIN VAR':
-        return <span className="badge badge-zamanin-var">GECERLI</span>;
+        return <span className="badge badge-zamanin-var">GEÇERLİ</span>;
       case 'MUAYENE DOLMAK ÜZERE':
         return <span className="badge badge-dolmak-uzere">DOLMAK ÜZERE</span>;
       case 'MUAYENE DOLDU':
@@ -24,7 +24,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
     <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
       <div style={{ marginBottom: '20px' }}>
         <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.2rem', fontWeight: 700 }}>
-          Arac Muayene Takip ve Kayitlari
+          Araç Muayene Takip ve Kayıtları
         </h3>
       </div>
 
@@ -33,8 +33,8 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
           <thead>
             <tr>
               <th>Plaka</th>
-              <th>Arac Detayi</th>
-              <th>Muayene Kaydi</th>
+              <th>Araç Detayı</th>
+              <th>Muayene Kaydı</th>
               <th>Muayene Sonucu</th>
               <th>Son Muayene Tarihi</th>
               <th>Kalan Süre</th>
@@ -55,18 +55,18 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
                 <td>
                   {v.inspectionDate ? (
                     <span style={{ color: '#10b981', fontWeight: 600, fontSize: '13px' }}>
-                      <i className="fa-solid fa-circle-check"></i> Kayitli
+                      <i className="fa-solid fa-circle-check"></i> Kayıtlı
                     </span>
                   ) : (
                     <span style={{ color: '#64748b', fontWeight: 600, fontSize: '13px' }}>
-                      <i className="fa-solid fa-circle-xmark"></i> Kayit Yok
+                      <i className="fa-solid fa-circle-xmark"></i> Kayıt Yok
                     </span>
                   )}
                 </td>
                 <td>
                   {v.inspectionDate ? (
                     v.inspectionPassed !== false ? (
-                      <span className="badge" style={{ background: '#ecfdf5', color: '#047857' }}>GECTI</span>
+                      <span className="badge" style={{ background: '#ecfdf5', color: '#047857' }}>GEÇTİ</span>
                     ) : (
                       <span className="badge" style={{ background: '#fef2f2', color: '#b91c1c' }}>KALDI</span>
                     )
@@ -82,7 +82,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
                 <td>
                   {v.inspectionRemainingDays !== undefined ? (
                     <span style={{ fontWeight: 600, color: v.inspectionRemainingDays < 30 ? '#ef4444' : '#334155', fontSize: '13px' }}>
-                      {v.inspectionRemainingDays} gün kaldi
+                      {v.inspectionRemainingDays} gün kaldı
                     </span>
                   ) : (
                     <span style={{ color: '#94a3b8' }}>-</span>
@@ -97,7 +97,7 @@ export const InspectionsView: React.FC<InspectionsViewProps> = ({ vehicles, GATE
                       rel="noreferrer"
                       className="btn btn-secondary"
                       style={{ padding: '6px 10px', fontSize: '12px', background: '#f1f5f9', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                      title="Muayene Raporunu Indir"
+                      title="Muayene Raporunu İndir"
                     >
                       <i className="fa-solid fa-file-pdf" style={{ color: '#dc2626' }}></i> Belge
                     </a>

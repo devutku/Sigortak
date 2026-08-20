@@ -23,7 +23,7 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
       case 'SIGORTA DOLDU':
         return <span className="badge badge-doldu">SÜRESİ DOLDU</span>;
       default:
-        return <span className="badge" style={{ background: '#e2e8f0', color: '#64748b' }}>BILGI YOK</span>;
+        return <span className="badge" style={{ background: '#e2e8f0', color: '#64748b' }}>BİLGİ YOK</span>;
     }
   };
 
@@ -31,16 +31,16 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
     <div className="glass-panel" style={{ padding: '24px', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h3 style={{ color: 'var(--color-deep-twilight)', fontSize: '1.2rem', fontWeight: 700 }}>
-          Kasko ve Trafik Policeleri
+          Kasko ve Trafik Poliçeleri
         </h3>
       </div>
 
       {vehiclesWithPolicies.length === 0 ? (
         <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b' }}>
           <i className="fa-solid fa-file-invoice" style={{ fontSize: '48px', color: '#cbd5e1', marginBottom: '16px' }}></i>
-          <p style={{ fontSize: '15px', fontWeight: 600 }}>Sistemde kayitli aktif sigorta policesi bulunmamaktadir.</p>
+          <p style={{ fontSize: '15px', fontWeight: 600 }}>Sistemde kayıtlı aktif sigorta poliçesi bulunmamaktadır.</p>
           <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-            Arac detayindan yeni police olusturabilir veya teklif satin alarak otomatik police üretebilirsiniz.
+            Araç detayından yeni poliçe oluşturabilir veya teklif satın alarak otomatik poliçe üretebilirsiniz.
           </p>
         </div>
       ) : (
@@ -49,14 +49,14 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
             <thead>
               <tr>
                 <th>Plaka</th>
-                <th>Arac Detayi</th>
-                <th>Police No / SBM No</th>
+                <th>Araç Detayı</th>
+                <th>Poliçe No / SBM No</th>
                 <th>Tür</th>
-                <th>Süreç (Baslangic / Bitis)</th>
+                <th>Süreç (Başlangıç / Bitiş)</th>
                 <th>Prim</th>
                 <th>Durum</th>
                 <th>Belge</th>
-                <th style={{ textAlign: 'right' }}>Islemler</th>
+                <th style={{ textAlign: 'right' }}>İşlemler</th>
               </tr>
             </thead>
             <tbody>
@@ -90,7 +90,7 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
                       {v.policyStartDate ? new Date(v.policyStartDate).toLocaleDateString('tr-TR') : '-'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                      Bitis: {v.policyEndDate ? new Date(v.policyEndDate).toLocaleDateString('tr-TR') : '-'}
+                      Bitiş: {v.policyEndDate ? new Date(v.policyEndDate).toLocaleDateString('tr-TR') : '-'}
                     </div>
                   </td>
                   <td><strong style={{ color: 'var(--color-bright-teal)' }}>{v.policyPremium ? `${v.policyPremium.toLocaleString('tr-TR')} ₺` : '-'}</strong></td>
@@ -101,7 +101,7 @@ export const PoliciesView: React.FC<PoliciesViewProps> = ({
                         href={`${GATEWAY_URL}${v.policyDocumentUrl}`} 
                         target="_blank" 
                         rel="noreferrer"
-                        title="PDF Indir"
+                        title="PDF İndir"
                         className="btn btn-secondary"
                         style={{ padding: '6px 10px', fontSize: '12px', background: '#f1f5f9', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                       >

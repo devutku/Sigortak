@@ -13,6 +13,10 @@ public class VehicleCreatedEvent : IntegrationEvent
     public string Brand { get; }
     public string Model { get; }
     public int Year { get; }
+    public string EngineNumber { get; }
+    public string EngineCapacity { get; }
+    public string ChassisNumber { get; }
+    public string RegistrationNumber { get; }
     public Guid OwnerId { get; }
     public string OwnerName { get; }
     public string OwnerTcNo { get; }
@@ -31,6 +35,10 @@ public class VehicleCreatedEvent : IntegrationEvent
         string brand, 
         string model, 
         int year, 
+        string engineNumber,
+        string engineCapacity,
+        string chassisNumber,
+        string registrationNumber,
         Guid ownerId, 
         string ownerName,
         string ownerTcNo,
@@ -48,6 +56,10 @@ public class VehicleCreatedEvent : IntegrationEvent
         Brand = brand;
         Model = model;
         Year = year;
+        EngineNumber = engineNumber;
+        EngineCapacity = engineCapacity;
+        ChassisNumber = chassisNumber;
+        RegistrationNumber = registrationNumber;
         OwnerId = ownerId;
         OwnerName = ownerName;
         OwnerTcNo = ownerTcNo;

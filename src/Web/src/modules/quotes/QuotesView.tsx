@@ -27,15 +27,15 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
       <section className="action-bar" style={{ background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>
-          Sigorta Teklifleri & Karsilastirma
+          Sigorta Teklifleri & Karşılaştırma
         </div>
       </section>
 
       {activeQuotes.length === 0 ? (
         <div className="glass-panel" style={{ padding: '60px 0', textAlign: 'center', background: '#fff', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
           <i className="fa-solid fa-receipt" style={{ fontSize: '56px', color: '#cbd5e1', marginBottom: '16px' }}></i>
-          <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>Sistemde bekleyen aktif teklif bulunmamaktadir.</p>
-          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Tüm teklifler onaylandi veya iptal edildi.</p>
+          <p style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>Sistemde bekleyen aktif teklif bulunmamaktadır.</p>
+          <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Tüm teklifler onaylandı veya iptal edildi.</p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
@@ -73,19 +73,19 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     background: q.policyType === 1 ? 'rgba(0,119,182,0.1)' : 'rgba(248,150,30,0.1)', 
                     color: q.policyType === 1 ? 'var(--color-bright-teal)' : '#f8961e' 
                   }}>
-                    {q.policyType === 1 ? 'KASKO' : 'TRAFIK'}
+                    {q.policyType === 1 ? 'KASKO' : 'TRAFİK'}
                   </span>
                 </div>
 
                 {/* Coverages Table */}
                 <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                    <span style={{ color: '#64748b' }}>Arac Plaka / Bilgi:</span>
+                    <span style={{ color: '#64748b' }}>Araç Plaka / Bilgi:</span>
                     <strong>{q.vehiclePlate} ({q.vehicleInfo})</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                     <span style={{ color: '#64748b' }}>IMM Limiti:</span>
-                    <strong>{q.immLimit || 'Belirtilmemis'}</strong>
+                    <strong>{q.immLimit || 'Belirtilmemiş'}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                     <span style={{ color: '#64748b' }}>Ikame Arac:</span>

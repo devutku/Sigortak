@@ -85,7 +85,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
           </div>
 
           <button className="btn btn-primary" onClick={() => setIsVehicleModalOpen(true)}>
-            <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i>Yeni Arac Ekle
+            <i className="fa-solid fa-plus" style={{ marginRight: '6px' }}></i>Yeni Araç Ekle
           </button>
         </div>
       </section>
@@ -98,7 +98,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
             <thead>
               <tr>
                 <th>Plaka</th>
-                <th>Arac Bilgisi</th>
+                <th>Araç Bilgisi</th>
                 <th>Muayene Kalan Gün</th>
                 <th>Muayene Durumu</th>
                 <th>Sigorta Durumu</th>
@@ -114,13 +114,13 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                   </td>
                   <td>
                     <div style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.year} {v.brand} {v.model}</div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Sase No: {v.ownerId.slice(0, 10)}...</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Şase No: {v.ownerId.slice(0, 10)}...</div>
                   </td>
                   <td>
-                    {v.inspectionRemainingDays !== undefined ? `${v.inspectionRemainingDays} gün` : '- gün'}
+                    {v.inspectionDate ? `${v.inspectionRemainingDays} gün` : <span style={{ color: '#ef4444', fontWeight: 700, fontSize: '12px' }}>Muayene Girilmedi</span>}
                   </td>
                   <td>
-                    {getStatusBadge(v.inspectionStatus)}
+                    {v.inspectionDate ? getStatusBadge(v.inspectionStatus) : <span className="badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: 700 }}>KAYIT YOK</span>}
                   </td>
                   <td>
                     {getStatusBadge(v.insuranceStatus)}
@@ -164,7 +164,7 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                           className="btn btn-primary" 
                           style={{ padding: '6px 10px', fontSize: '12px' }}
                         >
-                          + Police Ekle
+                          + Poliçe Ekle
                         </button>
                       )}
                     </div>
@@ -219,8 +219,10 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                 {v.engineCapacity && (
                   <span><i className="fa-solid fa-gauge-high" style={{ marginRight: '4px' }}></i>{v.engineCapacity}L</span>
                 )}
-                {v.inspectionRemainingDays !== undefined && (
+                {v.inspectionDate ? (
                   <span><i className="fa-solid fa-clipboard-check" style={{ marginRight: '4px' }}></i>{v.inspectionRemainingDays} gün</span>
+                ) : (
+                  <span style={{ color: '#ef4444', fontWeight: 700 }}><i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '4px' }}></i>Muayene Girilmedi</span>
                 )}
               </div>
 
@@ -228,13 +230,13 @@ export const VehiclesView: React.FC<VehiclesViewProps> = ({
                 <div style={{ background: 'var(--badge-zamanin-var-bg)', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontWeight: 600, color: 'var(--color-deep-twilight)' }}>{v.policyNumber}</div>
-                    <div style={{ color: '#64748b', marginTop: '2px' }}>{v.insuranceRemainingDays} gün kaldi</div>
+                    <div style={{ color: '#64748b', marginTop: '2px' }}>{v.insuranceRemainingDays} gün kaldı</div>
                   </div>
                   <i className="fa-solid fa-shield-halved" style={{ fontSize: '20px', color: 'var(--color-bright-teal)' }}></i>
                 </div>
               ) : (
                 <div style={{ background: '#fef2f2', padding: '10px 12px', borderRadius: '8px', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: '#991b1b', fontWeight: 500 }}>Aktif police yok</span>
+                  <span style={{ color: '#991b1b', fontWeight: 500 }}>Aktif poliçe yok</span>
                   <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '16px', color: '#dc2626' }}></i>
                 </div>
               )}

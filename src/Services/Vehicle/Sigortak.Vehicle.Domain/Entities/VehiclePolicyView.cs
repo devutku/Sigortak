@@ -11,6 +11,7 @@ public class VehiclePolicyView : IMultiTenant
     public string Model { get; set; } = string.Empty;
     public int Year { get; set; }
     public string BodyType { get; set; } = string.Empty;
+    public string EngineNumber { get; set; } = string.Empty;
     public string EngineCapacity { get; set; } = string.Empty;
     public string ChassisNumber { get; set; } = string.Empty;
     public string RegistrationNumber { get; set; } = string.Empty;

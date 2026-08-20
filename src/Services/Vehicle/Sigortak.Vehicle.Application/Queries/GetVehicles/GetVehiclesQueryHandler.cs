@@ -63,6 +63,7 @@ public class GetVehiclesQueryHandler : IRequestHandler<GetVehiclesQuery, Result<
             UsageType = v.UsageType,
             TrafficRegistrationDate = v.TrafficRegistrationDate,
             BodyType = v.BodyType,
+            EngineNumber = v.EngineNumber,
             EngineCapacity = v.EngineCapacity,
             ChassisNumber = v.ChassisNumber,
             RegistrationNumber = v.RegistrationNumber,

@@ -93,6 +93,10 @@ public class VehicleEventsConsumer : BackgroundService
                                     Model = vehicleEvent.Model,
                                     Year = vehicleEvent.Year,
                                     BodyType = vehicleEvent.BodyType.ToString(),
+                                    EngineNumber = vehicleEvent.EngineNumber,
+                                    EngineCapacity = vehicleEvent.EngineCapacity,
+                                    ChassisNumber = vehicleEvent.ChassisNumber,
+                                    RegistrationNumber = vehicleEvent.RegistrationNumber,
                                     OwnerId = vehicleEvent.OwnerId,
                                     OwnerName = vehicleEvent.OwnerName,
                                     OwnerTcNo = vehicleEvent.OwnerTcNo,
@@ -114,6 +118,10 @@ public class VehicleEventsConsumer : BackgroundService
                                 existing.Model = vehicleEvent.Model;
                                 existing.Year = vehicleEvent.Year;
                                 existing.BodyType = vehicleEvent.BodyType.ToString();
+                                existing.EngineNumber = vehicleEvent.EngineNumber;
+                                existing.EngineCapacity = vehicleEvent.EngineCapacity;
+                                existing.ChassisNumber = vehicleEvent.ChassisNumber;
+                                existing.RegistrationNumber = vehicleEvent.RegistrationNumber;
                                 existing.OwnerName = vehicleEvent.OwnerName;
                                 existing.OwnerTcNo = vehicleEvent.OwnerTcNo;
                                 existing.OwnerAddress = vehicleEvent.OwnerAddress;
@@ -137,6 +145,10 @@ public class VehicleEventsConsumer : BackgroundService
                                 Brand = vehicleEvent.Brand,
                                 Model = vehicleEvent.Model,
                                 Year = vehicleEvent.Year,
+                                EngineNumber = vehicleEvent.EngineNumber,
+                                EngineCapacity = vehicleEvent.EngineCapacity,
+                                ChassisNumber = vehicleEvent.ChassisNumber,
+                                RegistrationNumber = vehicleEvent.RegistrationNumber,
                                 OwnerId = vehicleEvent.OwnerId,
                                 OwnerName = vehicleEvent.OwnerName,
                                 OwnerTcNo = vehicleEvent.OwnerTcNo,

@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Sigortak.Quote.API": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:60399;http://localhost:60401"
+    }
+  }
+}

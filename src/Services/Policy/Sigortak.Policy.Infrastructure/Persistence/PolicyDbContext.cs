@@ -34,7 +34,7 @@ public class PolicyDbContext : DbContext
             entity.Property(e => e.PolicyNumber)
                 .HasMaxLength(50)
                 .IsRequired();
-            entity.HasIndex(e => e.PolicyNumber).IsUnique();
+            entity.HasIndex(e => e.PolicyNumber);
 
             entity.Property(e => e.SbmPolicyNumber).HasMaxLength(100);
             entity.Property(e => e.VehicleId).IsRequired();
@@ -43,6 +43,34 @@ public class PolicyDbContext : DbContext
             entity.Property(e => e.Premium).HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.DocumentUrl).HasMaxLength(500);
             entity.Property(e => e.PolicyType).IsRequired();
+
+            // Extended Configuration
+            entity.Property(e => e.CompanyName).HasMaxLength(200);
+            entity.Property(e => e.RenewalNumber).HasMaxLength(20);
+            entity.Property(e => e.AgencyCode).HasMaxLength(50);
+            entity.Property(e => e.NetPremium).HasPrecision(18, 2);
+            entity.Property(e => e.Commission).HasPrecision(18, 2);
+            entity.Property(e => e.VehicleValue).HasPrecision(18, 2);
+            entity.Property(e => e.ImmLimit).HasMaxLength(100);
+            entity.Property(e => e.PersonalAccidentCoverage).HasPrecision(18, 2);
+            entity.Property(e => e.LegalProtection).HasPrecision(18, 2);
+            entity.Property(e => e.TramerDocumentNo).HasMaxLength(100);
+
+            entity.Property(e => e.Discounts)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
+
+            entity.Property(e => e.ExtraCoverages)
+                .HasConversion(
+                    v => string.Join(",", v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
+
+            // Payment Status
+            entity.Property(e => e.IsPaid).HasDefaultValue(false);
+            entity.Property(e => e.PaymentNote).HasMaxLength(500);
 
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.CreatedBy).HasMaxLength(100);

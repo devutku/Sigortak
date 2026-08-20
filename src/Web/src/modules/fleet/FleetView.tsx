@@ -128,7 +128,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ vehicles, onAddVehicles, o
 
   const handleBulkQuoteRequest = async () => {
     if (selectedVehicleIds.length === 0) {
-      alert("Lütfen en az bir araç seçin.");
+      (window as any).showNotification?.("Lütfen en az bir araç seçin.", "error");
       return;
     }
     await onRequestBulkQuote(selectedVehicleIds);
@@ -137,16 +137,16 @@ export const FleetView: React.FC<FleetViewProps> = ({ vehicles, onAddVehicles, o
 
   const handleBulkPdfDownload = () => {
     if (selectedVehicleIds.length === 0) {
-      alert("Lütfen en az bir araç seçin.");
+      (window as any).showNotification?.("Lütfen en az bir araç seçin.", "error");
       return;
     }
-    alert(`${selectedVehicleIds.length} aracın poliçeleri toplu olarak PDF (.zip) şeklinde indiriliyor...`);
+    (window as any).showNotification?.(`${selectedVehicleIds.length} aracın poliçeleri toplu olarak PDF (.zip) şeklinde indiriliyor...`, "info");
   };
 
   const handleExcelImport = (e: React.FormEvent) => {
     e.preventDefault();
     if (!excelFile) {
-      alert("Lütfen bir Excel/CSV dosyası seçin.");
+      (window as any).showNotification?.("Lütfen bir Excel/CSV dosyası seçin.", "error");
       return;
     }
 
@@ -199,7 +199,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ vehicles, onAddVehicles, o
       setIsImporting(false);
       setIsExcelModalOpen(false);
       setExcelFile(null);
-      alert("Excel'den 3 yeni filo aracı başarıyla içe aktarıldı!");
+      (window as any).showNotification?.("Excel'den 3 yeni filo aracı başarıyla içe aktarıldı!", "success");
     }, 1500);
   };
 
@@ -543,7 +543,7 @@ export const FleetView: React.FC<FleetViewProps> = ({ vehicles, onAddVehicles, o
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => {
                     const deptName = SUB_FLEETS.find(f => f.id === targetDeptId)?.name || 'Bilinmeyen';
-                    alert(`${selectedVehicleIds.length} araç başarıyla "${deptName}" departmanına transfer edildi!`);
+                    (window as any).showNotification?.(`${selectedVehicleIds.length} araç başarıyla "${deptName}" departmanına transfer edildi!`, "success");
                     setIsDeptModalOpen(false);
                     setSelectedVehicleIds([]);
                   }}

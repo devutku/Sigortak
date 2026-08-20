@@ -3,10 +3,9 @@ import React from 'react';
 interface SidebarProps {
   activeMenu: string;
   setActiveMenu: (menu: any) => void;
-  handleLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, handleLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu }) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -15,21 +14,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, han
           <span>Sigortak</span>
         </div>
         <div className="subtitle-wrapper">
-          <span className="subtitle">Arac Yönetim Paneli</span>
+          <span className="subtitle">Araç Yönetim Paneli</span>
         </div>
       </div>
 
       <nav className="sidebar-menu">
         <div className="menu-label">KONTROL PANELİ</div>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'dashboard' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('dashboard'); }}
         >
           <i className="fa-solid fa-chart-line"></i> Portföy Genel Özeti (Dashboard)
         </a>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'calendar' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('calendar'); }}
         >
@@ -37,22 +36,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, han
         </a>
 
         <div className="menu-label">PORTFÖY & MÜŞTERİ YÖNETİMİ</div>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'customers' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('customers'); }}
         >
           <i className="fa-solid fa-users"></i> Müşteri Listesi
         </a>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'vehicles' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('vehicles'); }}
         >
           <i className="fa-solid fa-car"></i> Kayıtlı Araçlar Portföyü
         </a>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'fleet' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('fleet'); }}
         >
@@ -60,22 +59,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, han
         </a>
 
         <div className="menu-label">SİGORTA & OPERASYON</div>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'policies' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('policies'); }}
         >
-          <i className="fa-solid fa-file-contract"></i> Poliçe Portföyü
+          <i className="fa-solid fa-file-contract"></i>  Poliçe Portföyü
         </a>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'add-policy' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('add-policy'); }}
         >
-          <i className="fa-solid fa-file-import"></i> OCR Belge / PDF İçe Aktarma
+          <i className="fa-solid fa-file-import"></i> Poliçe İçe Aktarma
         </a>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'workorders' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('workorders'); }}
         >
@@ -83,15 +82,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, han
         </a>
 
         <div className="menu-label">SATIŞ & FİNANS</div>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'quotes' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('quotes'); }}
         >
           <i className="fa-solid fa-tags"></i> Teklifler & Karşılaştırmalar
         </a>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'billing' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('billing'); }}
         >
@@ -99,8 +98,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, han
         </a>
 
         <div className="menu-label">OTOMASYON</div>
-        <a 
-          href="#" 
+        <a
+          href="#"
           className={`menu-item ${activeMenu === 'reminders' ? 'active' : ''}`}
           onClick={(e) => { e.preventDefault(); setActiveMenu('reminders'); }}
         >
@@ -108,16 +107,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu, han
         </a>
       </nav>
 
-      <div className="sidebar-footer" style={{ marginTop: 'auto', paddingTop: '20px' }}>
-        <a 
-          href="#" 
-          className="menu-item" 
-          onClick={(e) => { e.preventDefault(); handleLogout(); }}
-          style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
-        >
-          <i className="fa-solid fa-right-from-bracket" style={{ color: '#ef4444' }}></i> Cikis Yap
-        </a>
-      </div>
     </aside>
   );
 };

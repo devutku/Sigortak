@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Sigortak.Ocr.Worker": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:60398;http://localhost:60404"
+    }
+  }
+}

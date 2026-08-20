@@ -166,7 +166,7 @@ try
         await dbContext.Database.MigrateAsync();
 
         var readDbContext = scope.ServiceProvider.GetRequiredService<ReadDbContext>();
-        await readDbContext.Database.EnsureCreatedAsync();
+        await readDbContext.Database.MigrateAsync();
 
         // Sync read database with write database if empty
         if (!await readDbContext.VehiclePolicies.IgnoreQueryFilters().AnyAsync())

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Sigortak.Policy.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Sigortak.Policy.Infrastructure.Persistence;
 namespace Sigortak.Policy.Infrastructure.Migrations
 {
     [DbContext(typeof(PolicyDbContext))]
-    partial class PolicyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260820085923_AddPaymentStatusFields")]
+    partial class AddPaymentStatusFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,7 +159,8 @@ namespace Sigortak.Policy.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PolicyNumber");
+                    b.HasIndex("PolicyNumber")
+                        .IsUnique();
 
                     b.ToTable("policies", (string)null);
                 });

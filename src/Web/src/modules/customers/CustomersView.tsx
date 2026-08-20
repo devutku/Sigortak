@@ -54,7 +54,7 @@ export const CustomersView: React.FC<CustomersViewProps> = ({
             <i className="fa-solid fa-magnifying-glass"></i>
             <input 
               type="text" 
-              placeholder="Müsteri adi veya Plaka ile ara..." 
+              placeholder="Müşteri adı veya plaka ile ara..." 
               value={customerSearchTerm}
               onChange={e => setCustomerSearchTerm(e.target.value)}
             />

@@ -12,6 +12,8 @@ import { CustomersView } from './modules/customers/CustomersView';
 import { WorkOrdersView } from './modules/workorders/WorkOrdersView';
 import { FleetView } from './modules/fleet/FleetView';
 import { OCRUploadView } from './modules/policies/OCRUploadView';
+import { BillingView } from './modules/billing/BillingView';
+import { RemindersView } from './modules/reminders/RemindersView';
 
 const GATEWAY_URL = "http://localhost:5000";
 
@@ -38,6 +40,22 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  useEffect(() => {
+    (window as any).showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+      setNotification({ message, type });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
   
   // Navigation & filtering states matching Web_old
   const [activeMenu, setActiveMenu] = useState<'vehicles' | 'dashboard' | 'add-policy' | 'customers' | 'workorders' | 'policies' | 'inspections' | 'fleet' | 'reminders' | 'quotes' | 'billing' | 'calendar'>('vehicles');
@@ -279,15 +297,16 @@ export default function App() {
         }
       });
       if (res.ok) {
-        alert("Teklif başarıyla onaylandı ve poliçeleştirildi!");
+        setNotification({ message: "Teklif başarıyla onaylandı ve poliçeleştirildi!", type: "success" });
         fetchQuotes();
         fetchVehicles();
       } else {
         const errorText = await res.text();
-        alert("Teklif onaylanamadı: " + errorText);
+        setNotification({ message: "Teklif onaylanamadı: " + errorText, type: "error" });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Teklif onay hatası", err);
+      setNotification({ message: "İşlem sırasında hata oluştu: " + err.message, type: "error" });
     }
   };
 
@@ -300,18 +319,19 @@ export default function App() {
         }
       });
       if (res.ok) {
-        alert("Teklif reddedildi.");
+        setNotification({ message: "Teklif reddedildi.", type: "success" });
         fetchQuotes();
       } else {
-        alert("Teklif reddedilemedi.");
+        setNotification({ message: "Hata oluştu: Teklif reddedilemedi.", type: "error" });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Teklif ret hatası", err);
+      setNotification({ message: "İşlem sırasında hata oluştu: " + err.message, type: "error" });
     }
   };
 
   const handleRequestBulkQuote = async (vehicleIds: string[]) => {
-    alert(`${vehicleIds.length} adet araç için toplu teklif talebi (RequestBulkQuoteCommand) fırlatıldı!`);
+    setNotification({ message: `${vehicleIds.length} adet araç için toplu teklif talebi (RequestBulkQuoteCommand) fırlatıldı!`, type: "info" });
   };
 
   const handleAddVehicles = async (newVehicles: Omit<Vehicle, 'id'>[]) => {
@@ -352,18 +372,68 @@ export default function App() {
   const handleSavePolicy = async (policyData: any) => {
     setLoading(true);
     try {
-      const matchingVehicle = vehicles.find(v => v.plate.replace(/\s+/g, '').toUpperCase() === policyData.plate.replace(/\s+/g, '').toUpperCase());
+      let matchingVehicle = vehicles.find(v => v.plate.replace(/\s+/g, '').toUpperCase() === policyData.plate.replace(/\s+/g, '').toUpperCase());
       
       if (!matchingVehicle) {
-        alert(`Sistemde ${policyData.plate} plakasına ait araç bulunamadı. Lütfen önce aracı kaydedin.`);
-        return;
+        setVfPlate(policyData.plate.replace(/\s+/g, '').toUpperCase());
+        const vInfo = policyData.vehicleInfo || '';
+        const words = vInfo.split(' ');
+        const brand = words[0] || 'TANIMSIZ';
+        const model = words.slice(1).join(' ') || 'OCR Kayıtlı Araç';
+        setVfBrand(brand);
+        setVfModel(model);
+        setVfYear(policyData.modelYear?.toString() || '2024');
+        setVfOwnerTcNo(policyData.ownerTcNo || '');
+        setVfOwnerName(policyData.ownerName || "Filo Müşterisi");
+        setVfOwnerAddress(policyData.ownerAddress || "Merkez Filo Şubesi");
+        setVfEngineCapacity("1.6");
+        setVfEngineNumber(policyData.engineNumber || "ENG-" + Math.floor(Math.random() * 90000 + 10000));
+        setVfChassisNumber(policyData.chassisNumber || "CHS-" + Math.floor(Math.random() * 90000000 + 10000000));
+        setVfRegistrationNumber("REG-" + Math.floor(Math.random() * 90000 + 10000));
+        setVfUsageType(policyData.usageType || "Hususi");
+        
+        setIsVehicleModalOpen(true);
+        setNotification({
+          message: `Sistemde ${policyData.plate} plakasına ait araç bulunamadı. OCR verileriyle ekleme formu açıldı.`,
+          type: "info"
+        });
+        return false;
       }
 
       const formData = new FormData();
       formData.append("vehicleId", matchingVehicle.id);
       formData.append("policyNumber", policyData.policyNumber || "POL-" + Math.floor(Math.random() * 900000 + 100000));
       formData.append("sbmPolicyNumber", policyData.sbmPolicyNumber || "SBM-" + Math.floor(Math.random() * 9000000 + 1000000));
-      formData.append("premium", policyData.grossPremium.toString());
+      formData.append("premium", (policyData.premium || policyData.grossPremium || 0).toString());
+
+      // Vade tarihleri — OCR'dan gelen gerçek tarihler
+      formData.append("startDate", policyData.startDate || new Date().toISOString().split('T')[0]);
+      formData.append("endDate", policyData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+      // Poliçe türü
+      const policyTypeVal = (policyData.policyType || 'KASKO').toUpperCase().includes('TRAFIK') ? '0' : '1';
+      formData.append("policyType", policyTypeVal);
+
+      // Genişletilmiş alanlar
+      if (policyData.company) formData.append("companyName", policyData.company);
+      if (policyData.renewalNumber) formData.append("renewalNumber", policyData.renewalNumber);
+      if (policyData.agencyCode) formData.append("agencyCode", policyData.agencyCode);
+      if (policyData.premium) formData.append("netPremium", policyData.premium.toString());
+      if (policyData.commission) formData.append("commission", policyData.commission.toString());
+      if (policyData.vehicleValue) formData.append("vehicleValue", policyData.vehicleValue.toString());
+      if (policyData.immLimit) formData.append("immLimit", policyData.immLimit);
+      if (policyData.personalAccidentCoverage) formData.append("personalAccidentCoverage", policyData.personalAccidentCoverage.toString());
+      if (policyData.legalProtection) formData.append("legalProtection", policyData.legalProtection.toString());
+      if (policyData.noClaimDiscountRate) formData.append("noClaimDiscountRate", policyData.noClaimDiscountRate.toString());
+      if (policyData.noClaimStep) formData.append("noClaimStep", policyData.noClaimStep.toString());
+      if (policyData.tramerDocumentNo) formData.append("tramerDocumentNo", policyData.tramerDocumentNo);
+      if (policyData.tramerDocumentDate) formData.append("tramerDocumentDate", policyData.tramerDocumentDate);
+      if (policyData.discounts && Array.isArray(policyData.discounts)) {
+        policyData.discounts.forEach((d: string) => formData.append("discounts", d));
+      }
+      if (policyData.extraCoverages && Array.isArray(policyData.extraCoverages)) {
+        policyData.extraCoverages.forEach((c: string) => formData.append("extraCoverages", c));
+      }
 
       const res = await fetch(`${GATEWAY_URL}/api/v1/policies/renew`, {
         method: "POST",
@@ -374,15 +444,16 @@ export default function App() {
       });
 
       if (res.ok) {
-        alert("Poliçe başarıyla portföye kaydedildi ve araçla ilişkilendirildi!");
+        setNotification({ message: "Poliçe başarıyla portföye kaydedildi ve araçla ilişkilendirildi!", type: "success" });
         fetchVehicles();
         setActiveMenu('policies');
       } else {
         const errText = await res.text();
-        alert("Poliçe kaydedilemedi: " + errText);
+        setNotification({ message: "Hata oluştu: Poliçe kaydedilemedi: " + errText, type: "error" });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Poliçe kaydetme hatası:", err);
+      setNotification({ message: "Hata oluştu: Poliçe kaydedilemedi.", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -449,10 +520,11 @@ export default function App() {
         fetchWorkOrders();
       } else {
         const data = await res.json();
-        alert(data.message || "İş emri durumu güncellenemedi.");
+        setNotification({ message: "Hata oluştu: " + (data.message || "İş emri durumu güncellenemedi."), type: "error" });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Durum güncellenemedi", err);
+      setNotification({ message: "İşlem sırasında hata oluştu: " + err.message, type: "error" });
     }
   };
 
@@ -460,7 +532,7 @@ export default function App() {
     const relatedVehicle = vehicles.find(v => v.id === wo.relatedEntityId);
     const printWindow = window.open('', '_blank', 'width=800,height=900');
     if (!printWindow) {
-      alert("Yazdırma penceresi açılamadı. Lütfen pop-up engelleyicinizi kontrol edin.");
+      setNotification({ message: "Yazdırma penceresi açılamadı. Lütfen pop-up engelleyicinizi kontrol edin.", type: "error" });
       return;
     }
 
@@ -798,12 +870,12 @@ export default function App() {
         throw new Error(data.message || "Poliçe yenilenemedi.");
       }
 
-      alert("Poliçe başarıyla yenilendi!");
+      setNotification({ message: "Poliçe başarıyla yenilendi!", type: "success" });
       setRenewSbmPolicyNo("");
       setIsRenewModalOpen(false);
       fetchVehicles();
     } catch (err: any) {
-      alert("Hata: " + err.message);
+      setNotification({ message: "Hata oluştu: " + err.message, type: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -1018,7 +1090,7 @@ export default function App() {
         />
       )}
       {activeMenu === 'add-policy' && (
-        <OCRUploadView onSavePolicy={handleSavePolicy} />
+        <OCRUploadView onSavePolicy={handleSavePolicy} vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
       )}
       {activeMenu === 'inspections' && (
         <InspectionsView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
@@ -1045,6 +1117,19 @@ export default function App() {
           onApproveQuote={handleApproveQuote}
           onRejectQuote={handleRejectQuote}
           GATEWAY_URL={GATEWAY_URL}
+        />
+      )}
+      {activeMenu === 'billing' && (
+        <BillingView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
+      )}
+      {activeMenu === 'reminders' && (
+        <RemindersView
+          vehicles={vehicles}
+          onOpenRenewModal={(vehicleId, policyNumber) => {
+            setRenewVehicleId(vehicleId);
+            setRenewPolicyNo(policyNumber + "-R");
+            setIsRenewModalOpen(true);
+          }}
         />
       )}
 
@@ -1361,6 +1446,28 @@ export default function App() {
                 {detailVehicle.year} {detailVehicle.brand} {detailVehicle.model}
               </h4>
 
+              {!detailVehicle.inspectionDate && (
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  color: '#b91c1c'
+                }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px', marginTop: '2px' }}></i>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '13px', marginBottom: '2px' }}>UYUMLULUK (COMPLIANCE) UYARISI: Muayene Girilmedi!</strong>
+                    <span style={{ fontSize: '12px', lineHeight: '1.4', display: 'block', opacity: 0.9 }}>
+                      Bu aracın geçerli bir TÜVTÜRK muayenesi bulunmamaktadır. Kasko ve hasar ödemelerinde ret veya rücu riski, ayrıca sahada trafikten men ve ceza alma riski bulunmaktadır.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Owner Specs */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
                 <div>
@@ -1382,9 +1489,9 @@ export default function App() {
                     <i className="fa-solid fa-clipboard-check" style={{ color: 'var(--color-bright-teal)' }}></i>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Muayene Durumu</span>
                   </div>
-                  {getStatusBadge(detailVehicle.inspectionStatus)}
+                  {detailVehicle.inspectionDate ? getStatusBadge(detailVehicle.inspectionStatus) : <span className="badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: 700 }}>MUAYENE GİRİLMEDİ</span>}
                   <div style={{ marginTop: '8px', fontSize: '13px', color: '#334155' }}>
-                    {detailVehicle.inspectionRemainingDays !== undefined ? `${detailVehicle.inspectionRemainingDays} gün kaldı` : 'Bilgi yok'}
+                    {detailVehicle.inspectionDate && detailVehicle.inspectionRemainingDays !== undefined ? `${detailVehicle.inspectionRemainingDays} gün kaldı` : 'Kayıt Yok'}
                   </div>
                   {detailVehicle.inspectionDate && (
                     <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Son Muayene: {new Date(detailVehicle.inspectionDate).toLocaleDateString('tr-TR')}</div>
@@ -1824,6 +1931,35 @@ export default function App() {
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          right: '24px',
+          background: notification.type === 'success' ? '#ecfdf5' : notification.type === 'error' ? '#fef2f2' : '#eff6ff',
+          color: notification.type === 'success' ? '#065f46' : notification.type === 'error' ? '#991b1b' : '#1e40af',
+          border: `1px solid ${notification.type === 'success' ? '#a7f3d0' : notification.type === 'error' ? '#fca5a5' : '#bfdbfe'}`,
+          padding: '16px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          minWidth: '320px',
+          maxWidth: '450px'
+        }}>
+          <i className={`fa-solid ${notification.type === 'success' ? 'fa-circle-check' : notification.type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info'}`} style={{ fontSize: '20px' }}></i>
+          <div style={{ flex: 1, fontSize: '14px', fontWeight: 600 }}>{notification.message}</div>
+          <button 
+            onClick={() => setNotification(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
         </div>
       )}
     </MainLayout>
