@@ -1,3 +1,13 @@
+const escapeHtml = (unsafe: any): string => {
+  if (unsafe === null || unsafe === undefined) return '';
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 export const printWorkOrder = (wo: any, vehicles: any[]): boolean => {
   const relatedVehicle = vehicles.find(v => v.id === wo.relatedEntityId);
   const printWindow = window.open('', '_blank', 'width=800,height=900');
@@ -70,19 +80,19 @@ export const printWorkOrder = (wo: any, vehicles: any[]): boolean => {
   const vehicleInfoHtml = relatedVehicle ? `
     <div class="field">
       <span class="field-label">Plaka:</span>
-      <span class="field-value" style="font-weight: bold; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${relatedVehicle.plate}</span>
+      <span class="field-value" style="font-weight: bold; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${escapeHtml(relatedVehicle.plate)}</span>
     </div>
     <div class="field">
       <span class="field-label">Marka / Model:</span>
-      <span class="field-value">${relatedVehicle.brand} ${relatedVehicle.model}</span>
+      <span class="field-value">${escapeHtml(relatedVehicle.brand)} ${escapeHtml(relatedVehicle.model)}</span>
     </div>
     <div class="field">
       <span class="field-label">Yıl / Kasa:</span>
-      <span class="field-value">${relatedVehicle.year} / ${relatedVehicle.bodyType || 'Sedan'}</span>
+      <span class="field-value">${escapeHtml(relatedVehicle.year)} / ${escapeHtml(relatedVehicle.bodyType || 'Sedan')}</span>
     </div>
     <div class="field">
       <span class="field-label">Araç Sahibi:</span>
-      <span class="field-value">${relatedVehicle.ownerName || '-'}</span>
+      <span class="field-value">${escapeHtml(relatedVehicle.ownerName || '-')}</span>
     </div>
   ` : `
     <div class="field" style="color: #64748b; font-style: italic;">
@@ -93,7 +103,7 @@ export const printWorkOrder = (wo: any, vehicles: any[]): boolean => {
   printWindow.document.write(`
     <html>
       <head>
-        <title>İş Emri - ${wo.orderNumber || ''}</title>
+        <title>İş Emri - ${escapeHtml(wo.orderNumber || '')}</title>
         <style>
           body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -221,7 +231,7 @@ export const printWorkOrder = (wo: any, vehicles: any[]): boolean => {
             <h3>İŞ EMRİ DETAYLARI</h3>
             <div class="field">
               <span class="field-label">İş Emri No:</span>
-              <span class="field-value" style="font-weight: bold;">${wo.orderNumber || '-'}</span>
+              <span class="field-value" style="font-weight: bold;">${escapeHtml(wo.orderNumber || '-')}</span>
             </div>
             <div class="field">
               <span class="field-label">İş Tipi:</span>
@@ -237,7 +247,7 @@ export const printWorkOrder = (wo: any, vehicles: any[]): boolean => {
             </div>
             <div class="field">
               <span class="field-label">Özel Notlar:</span>
-              <span class="field-value">${wo.specialNotes || '-'}</span>
+              <span class="field-value">${escapeHtml(wo.specialNotes || '-')}</span>
             </div>
           </div>
 
@@ -250,8 +260,8 @@ export const printWorkOrder = (wo: any, vehicles: any[]): boolean => {
         <div class="description-box">
           <h3>İŞ AÇIKLAMASI & TALİMATLAR</h3>
           <div class="description-content">
-            <strong>${wo.title}</strong>
-            <p>${wo.description}</p>
+            <strong>${escapeHtml(wo.title)}</strong>
+            <p>${escapeHtml(wo.description)}</p>
           </div>
         </div>
 
