@@ -86,8 +86,8 @@ public class IdentityDbContext : DbContext
             Id = adminId,
             Username = "admin",
             Email = "admin@sigortak.dev",
-            // BCrypt hash of "Admin123!"
-            PasswordHash = "$2a$11$K3rGPHdSOGPCqKj4i8HNMeADdTaFGJTXUQ5YqYvD.3tP7tRQ1K/Wy",
+            // BCrypt hash of "Password123!"
+            PasswordHash = "$2a$11$4XRp5/fGPc6kNLV3bYeJoO62.lxPSTAOqhNoYRNiQML1ED5j2DS/C",
             FirstName = "Sistem",
             LastName = "Yöneticisi",
             Role = Domain.Enums.Role.SystemAdmin,
