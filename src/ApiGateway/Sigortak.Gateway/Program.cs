@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Yarp.ReverseProxy.Transforms;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -19,7 +20,30 @@ try
 
     // YARP Reverse Proxy
     builder.Services.AddReverseProxy()
-        .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+        .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+        .AddTransforms(builderContext =>
+        {
+            builderContext.AddRequestTransform(transformContext =>
+            {
+                var user = transformContext.HttpContext.User;
+                var tenantIdClaim = user.FindFirst("tenant_id")?.Value;
+                if (!string.IsNullOrEmpty(tenantIdClaim))
+                {
+                    transformContext.ProxyRequest.Headers.Remove("X-Tenant-Id");
+                    transformContext.ProxyRequest.Headers.Add("X-Tenant-Id", tenantIdClaim);
+                }
+                else
+                {
+                    var clientTenantId = transformContext.HttpContext.Request.Headers["X-Tenant-Id"].ToString();
+                    if (!string.IsNullOrEmpty(clientTenantId))
+                    {
+                        transformContext.ProxyRequest.Headers.Remove("X-Tenant-Id");
+                        transformContext.ProxyRequest.Headers.Add("X-Tenant-Id", clientTenantId);
+                    }
+                }
+                return ValueTask.CompletedTask;
+            });
+        });
 
     // JWT Authentication (gateway seviyesinde doğrulama)
     var jwtSecret = builder.Configuration["Jwt:Secret"]!;

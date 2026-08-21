@@ -76,6 +76,7 @@ public class PolicyExpirationWorker : BackgroundService
                     customerPhone,
                     customerEmail
                 );
+                warningEvent.TenantId = policy.TenantId;
 
                 await eventBus.PublishAsync(warningEvent, cancellationToken);
             }

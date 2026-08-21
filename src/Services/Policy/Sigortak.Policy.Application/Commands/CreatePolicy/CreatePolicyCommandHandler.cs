@@ -82,6 +82,7 @@ public class CreatePolicyCommandHandler : IRequestHandler<CreatePolicyCommand, R
             policy.DocumentUrl,
             (int)policy.PolicyType
         );
+        policyCreatedEvent.TenantId = policy.TenantId;
 
         await _eventBus.PublishAsync(policyCreatedEvent, cancellationToken);
 

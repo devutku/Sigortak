@@ -65,6 +65,7 @@ public class UpdateVehicleCommandHandler : IRequestHandler<UpdateVehicleCommand,
             vehicle.InspectionDocumentUrl,
             vehicle.InsuranceEndDate
         );
+        syncEvent.TenantId = vehicle.TenantId;
         await _kafkaEventBus.PublishAsync(syncEvent, cancellationToken);
 
         return Result.Success(true, "Araç başarıyla güncellendi.");

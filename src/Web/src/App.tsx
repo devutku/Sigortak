@@ -15,15 +15,18 @@ import { OCRUploadView } from './modules/policies/OCRUploadView';
 import { BillingView } from './modules/billing/BillingView';
 import { RemindersView } from './modules/reminders/RemindersView';
 
+import { ToastNotification } from './components/ToastNotification';
+import { printWorkOrder } from './utils/printUtils';
+import { VehicleDetailModal } from './components/modals/VehicleDetailModal';
+import { CreateVehicleModal } from './components/modals/CreateVehicleModal';
+import { CreatePolicyModal } from './components/modals/CreatePolicyModal';
+import { RenewPolicyModal } from './components/modals/RenewPolicyModal';
+import { CreateWorkOrderModal } from './components/modals/CreateWorkOrderModal';
+import * as api from './services/api';
+
 const GATEWAY_URL = "http://localhost:5000";
 
-const CAR_BRANDS = [
-  "Alfa Romeo", "Audi", "BMW", "Chevrolet", "Citroen", "Cupra", "Dacia", "DS Automobiles",
 
-  "Fiat", "Ford", "Honda", "Hyundai", "Jaguar", "Jeep", "Kia", "Land Rover", "Lexus", "Maserati", 
-  "Mazda", "Mercedes-Benz", "Mini", "Mitsubishi", "Nissan", "Opel", "Peugeot", "Porsche", 
-  "Renault", "Seat", "Skoda", "Smart", "Subaru", "Suzuki", "Tesla", "Togg", "Toyota", "Volvo", "Volkswagen"
-];
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -68,62 +71,21 @@ export default function App() {
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [isWorkOrderModalOpen, setIsWorkOrderModalOpen] = useState(false);
-  const [woTitle, setWoTitle] = useState("");
-  const [woDescription, setWoDescription] = useState("");
-  const [woType, setWoType] = useState("1");
-  const [woPriority, setWoPriority] = useState("2");
-  const [woRelatedEntityId, setWoRelatedEntityId] = useState("");
-  const [woSpecialNotes, setWoSpecialNotes] = useState("");
-  const [woSuccess, setWoSuccess] = useState("");
-  const [woError, setWoError] = useState("");
-  const [woSubmitting, setWoSubmitting] = useState(false);
 
   // Modals state
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
   const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
 
-  // Vehicle Form State
-  const [vfPlate, setVfPlate] = useState("");
-  const [vfBrand, setVfBrand] = useState("");
-  const [vfModel, setVfModel] = useState("");
-  const [showBrandSuggestions, setShowBrandSuggestions] = useState(false);
-
-  const brandSuggestions = vfBrand.trim() === "" 
-    ? CAR_BRANDS 
-    : CAR_BRANDS.filter(brand => brand.toLowerCase().includes(vfBrand.toLowerCase()) && brand.toLowerCase() !== vfBrand.toLowerCase());
-  const [vfYear, setVfYear] = useState("");
-  const [vfEngineCapacity, setVfEngineCapacity] = useState("");
-  const [vfEngineNumber, setVfEngineNumber] = useState("");
-  const [vfChassisNumber, setVfChassisNumber] = useState("");
-  const [vfRegistrationNumber, setVfRegistrationNumber] = useState("");
-  const [vfOwnerName, setVfOwnerName] = useState("");
-  const [vfOwnerTcNo, setVfOwnerTcNo] = useState("");
-  const [vfOwnerAddress, setVfOwnerAddress] = useState("");
-  const [vfUsageType, setVfUsageType] = useState("");
-  const [vfTrafficRegistrationDate, setVfTrafficRegistrationDate] = useState("");
-  const [vfBodyType, setVfBodyType] = useState("Sedan");
-  const [vfSuccess, setVfSuccess] = useState("");
-  const [vfError, setVfError] = useState("");
-  const [vfSubmitting, setVfSubmitting] = useState(false);
+  // Prefill data for Vehicle Modal (e.g. from OCR)
+  const [initialVehicleValues, setInitialVehicleValues] = useState<any>(null);
 
   // Policy Form State
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
-  const [policyNumber, setPolicyNumber] = useState("");
-  const [sbmPolicyNumber, setSbmPolicyNumber] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [premium, setPremium] = useState("");
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [formSuccess, setFormSuccess] = useState("");
-  const [formError, setFormError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   // Renewal Form State
   const [renewVehicleId, setRenewVehicleId] = useState("");
   const [renewPolicyNo, setRenewPolicyNo] = useState("");
-  const [renewSbmPolicyNo, setRenewSbmPolicyNo] = useState("");
-  const [renewPremium, setRenewPremium] = useState("");
 
   // Load FontAwesome and fetch vehicles
   useEffect(() => {
@@ -163,15 +125,7 @@ export default function App() {
     e.preventDefault();
     setLoginError("");
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Giriş başarısız. Lütfen şifrenizi kontrol edin.");
-      }
+      const data = await api.login(GATEWAY_URL, { username, password });
       localStorage.setItem("accessToken", data.data.accessToken);
       localStorage.setItem("refreshToken", data.data.refreshToken);
       setToken(data.data.accessToken);
@@ -179,6 +133,7 @@ export default function App() {
       setLoginError(err.message);
     }
   };
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -189,21 +144,11 @@ export default function App() {
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/vehicles`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (res.status === 401) {
-        handleLogout();
-        return;
-      }
-      const data = await res.json();
-      if (res.ok && data.data) {
-        setVehicles(data.data);
-      }
-    } catch (err) {
+      const data = await api.getVehicles(GATEWAY_URL, token || "");
+      setVehicles(data);
+    } catch (err: any) {
       console.error("Araçlar yüklenemedi", err);
+      handleLogout();
     } finally {
       setLoading(false);
     }
@@ -212,77 +157,20 @@ export default function App() {
   const fetchWorkOrders = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/workorders`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (res.status === 401) {
-        handleLogout();
-        return;
-      }
-      const data = await res.json();
-      if (res.ok && data.data) {
-        setWorkOrders(data.data);
-      }
-    } catch (err) {
+      const data = await api.getWorkOrders(GATEWAY_URL, token || "");
+      setWorkOrders(data);
+    } catch (err: any) {
       console.error("İş emirleri yüklenemedi", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const mapBackendQuoteToFrontend = (q: any): Quote => {
-    let policyType = 1;
-    if (q.policyType === 'Traffic' || q.policyType === 2) {
-      policyType = 2;
-    }
-    
-    let status = 0;
-    if (q.status === 'Approved' || q.status === 1) {
-      status = 1;
-    } else if (q.status === 'Rejected' || q.status === 2) {
-      status = 2;
-    }
-
-    return {
-      id: q.id,
-      vehicleId: q.vehicleId,
-      vehiclePlate: q.vehiclePlate,
-      vehicleInfo: q.vehicleInfo,
-      insuranceCompany: q.insuranceCompany,
-      agentName: q.agentName,
-      policyType: policyType,
-      premium: q.premium,
-      validityDate: q.validityDate,
-      status: status,
-      immLimit: q.immLimit,
-      replacementCar: q.replacementCarDuration || q.replacementCar || '',
-      deductible: q.exemptStatus || q.deductible || '',
-      glassCoverage: q.glassCovered !== undefined ? q.glassCovered : q.glassCoverage,
-      assistance: q.asstServices === 'Dahil' || q.asstServices === 'true' || q.asstServices === true || q.assistance || false,
-      documentUrl: q.pdfDocumentUrl || q.documentUrl || ''
-    };
-  };
-
   const fetchQuotes = async () => {
     if (!token) return;
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/quotes`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (res.status === 401) {
-        handleLogout();
-        return;
-      }
-      const data = await res.json();
-      if (res.ok && data) {
-        const rawQuotes = data.data || data;
-        const mappedQuotes = Array.isArray(rawQuotes) ? rawQuotes.map(mapBackendQuoteToFrontend) : [];
-        setQuotes(mappedQuotes);
-      }
+      const data = await api.getQuotes(GATEWAY_URL, token);
+      setQuotes(data);
     } catch (err) {
       console.error("Teklifler yüklenemedi", err);
     }
@@ -290,20 +178,10 @@ export default function App() {
 
   const handleApproveQuote = async (id: string) => {
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/quotes/${id}/approve`, {
-        method: 'POST',
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (res.ok) {
-        setNotification({ message: "Teklif başarıyla onaylandı ve poliçeleştirildi!", type: "success" });
-        fetchQuotes();
-        fetchVehicles();
-      } else {
-        const errorText = await res.text();
-        setNotification({ message: "Teklif onaylanamadı: " + errorText, type: "error" });
-      }
+      await api.approveQuote(GATEWAY_URL, id, token || "");
+      setNotification({ message: "Teklif başarıyla onaylandı ve poliçeleştirildi!", type: "success" });
+      fetchQuotes();
+      fetchVehicles();
     } catch (err: any) {
       console.error("Teklif onay hatası", err);
       setNotification({ message: "İşlem sırasında hata oluştu: " + err.message, type: "error" });
@@ -312,18 +190,9 @@ export default function App() {
 
   const handleRejectQuote = async (id: string) => {
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/quotes/${id}/reject`, {
-        method: 'POST',
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (res.ok) {
-        setNotification({ message: "Teklif reddedildi.", type: "success" });
-        fetchQuotes();
-      } else {
-        setNotification({ message: "Hata oluştu: Teklif reddedilemedi.", type: "error" });
-      }
+      await api.rejectQuote(GATEWAY_URL, id, token || "");
+      setNotification({ message: "Teklif reddedildi.", type: "success" });
+      fetchQuotes();
     } catch (err: any) {
       console.error("Teklif ret hatası", err);
       setNotification({ message: "İşlem sırasında hata oluştu: " + err.message, type: "error" });
@@ -375,22 +244,26 @@ export default function App() {
       let matchingVehicle = vehicles.find(v => v.plate.replace(/\s+/g, '').toUpperCase() === policyData.plate.replace(/\s+/g, '').toUpperCase());
       
       if (!matchingVehicle) {
-        setVfPlate(policyData.plate.replace(/\s+/g, '').toUpperCase());
         const vInfo = policyData.vehicleInfo || '';
         const words = vInfo.split(' ');
         const brand = words[0] || 'TANIMSIZ';
         const model = words.slice(1).join(' ') || 'OCR Kayıtlı Araç';
-        setVfBrand(brand);
-        setVfModel(model);
-        setVfYear(policyData.modelYear?.toString() || '2024');
-        setVfOwnerTcNo(policyData.ownerTcNo || '');
-        setVfOwnerName(policyData.ownerName || "Filo Müşterisi");
-        setVfOwnerAddress(policyData.ownerAddress || "Merkez Filo Şubesi");
-        setVfEngineCapacity("1.6");
-        setVfEngineNumber(policyData.engineNumber || "ENG-" + Math.floor(Math.random() * 90000 + 10000));
-        setVfChassisNumber(policyData.chassisNumber || "CHS-" + Math.floor(Math.random() * 90000000 + 10000000));
-        setVfRegistrationNumber("REG-" + Math.floor(Math.random() * 90000 + 10000));
-        setVfUsageType(policyData.usageType || "Hususi");
+        
+        setInitialVehicleValues({
+          plate: policyData.plate.replace(/\s+/g, '').toUpperCase(),
+          brand,
+          model,
+          year: policyData.modelYear?.toString() || '2024',
+          ownerTcNo: policyData.ownerTcNo || '',
+          ownerName: policyData.ownerName || "Filo Müşterisi",
+          ownerAddress: policyData.ownerAddress || "Merkez Filo Şubesi",
+          engineCapacity: "1.6",
+          engineNumber: policyData.engineNumber || "ENG-" + Math.floor(Math.random() * 90000 + 10000),
+          chassisNumber: policyData.chassisNumber || "CHS-" + Math.floor(Math.random() * 90000000 + 10000000),
+          registrationNumber: "REG-" + Math.floor(Math.random() * 90000 + 10000),
+          usageType: policyData.usageType || "Hususi",
+          bodyType: "Sedan"
+        });
         
         setIsVehicleModalOpen(true);
         setNotification({
@@ -435,22 +308,10 @@ export default function App() {
         policyData.extraCoverages.forEach((c: string) => formData.append("extraCoverages", c));
       }
 
-      const res = await fetch(`${GATEWAY_URL}/api/v1/policies/renew`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (res.ok) {
-        setNotification({ message: "Poliçe başarıyla portföye kaydedildi ve araçla ilişkilendirildi!", type: "success" });
-        fetchVehicles();
-        setActiveMenu('policies');
-      } else {
-        const errText = await res.text();
-        setNotification({ message: "Hata oluştu: Poliçe kaydedilemedi: " + errText, type: "error" });
-      }
+      await api.renewPolicy(GATEWAY_URL, formData, token || "");
+      setNotification({ message: "Poliçe başarıyla portföye kaydedildi ve araçla ilişkilendirildi!", type: "success" });
+      fetchVehicles();
+      setActiveMenu('policies');
     } catch (err: any) {
       console.error("Poliçe kaydetme hatası:", err);
       setNotification({ message: "Hata oluştu: Poliçe kaydedilemedi.", type: "error" });
@@ -459,69 +320,10 @@ export default function App() {
     }
   };
 
-  const handleCreateWorkOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setWoError("");
-    setWoSuccess("");
-    if (!woTitle || !woDescription) {
-      setWoError("Lütfen başlık ve açıklama alanlarını doldurun.");
-      return;
-    }
-
-    setWoSubmitting(true);
-    try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/workorders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title: woTitle,
-          description: woDescription,
-          orderType: parseInt(woType),
-          priority: parseInt(woPriority),
-          relatedEntityId: woRelatedEntityId || null,
-          specialNotes: woSpecialNotes
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "İş emri oluşturulurken bir hata oluştu.");
-      }
-      setWoSuccess("İş emri başarıyla oluşturuldu.");
-      setWoTitle("");
-      setWoDescription("");
-      setWoRelatedEntityId("");
-      setWoSpecialNotes("");
-      fetchWorkOrders();
-      setTimeout(() => {
-        setIsWorkOrderModalOpen(false);
-        setWoSuccess("");
-      }, 1500);
-    } catch (err: any) {
-      setWoError(err.message);
-    } finally {
-      setWoSubmitting(false);
-    }
-  };
-
   const handleUpdateWorkOrderStatus = async (id: string, status: number) => {
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/workorders/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ id, status })
-      });
-      if (res.ok) {
-        fetchWorkOrders();
-      } else {
-        const data = await res.json();
-        setNotification({ message: "Hata oluştu: " + (data.message || "İş emri durumu güncellenemedi."), type: "error" });
-      }
+      await api.updateWorkOrderStatus(GATEWAY_URL, id, status, token || "");
+      fetchWorkOrders();
     } catch (err: any) {
       console.error("Durum güncellenemedi", err);
       setNotification({ message: "İşlem sırasında hata oluştu: " + err.message, type: "error" });
@@ -529,423 +331,9 @@ export default function App() {
   };
 
   const handlePrintWorkOrder = (wo: any) => {
-    const relatedVehicle = vehicles.find(v => v.id === wo.relatedEntityId);
-    const printWindow = window.open('', '_blank', 'width=800,height=900');
-    if (!printWindow) {
+    const success = printWorkOrder(wo, vehicles);
+    if (!success) {
       setNotification({ message: "Yazdırma penceresi açılamadı. Lütfen pop-up engelleyicinizi kontrol edin.", type: "error" });
-      return;
-    }
-
-    const orderTypeStr = (() => {
-      switch (wo.orderType) {
-        case 'ClaimFile': return 'Hasar Dosyası Açma';
-        case 'ExpertAssignment': return 'Eksper Atama';
-        case 'PolicyRenewal': return 'Poliçe Yenileme';
-        case 'CollectionAndCancellation': return 'Tahsilat & İptal';
-        default: return wo.orderType;
-      }
-    })();
-
-    const priorityStr = (() => {
-      switch (wo.priority) {
-        case 'Low': return 'Düşük';
-        case 'Medium': return 'Orta';
-        case 'High': return 'Yüksek';
-        case 'Critical': return 'Kritik';
-        default: return wo.priority;
-      }
-    })();
-
-    const statusStr = (() => {
-      switch (wo.status) {
-        case 'New': return 'Yeni';
-        case 'Assigned': return 'Atandı';
-        case 'InProgress': return 'İşlemde';
-        case 'Completed': return 'Tamamlandı';
-        case 'Cancelled': return 'İptal Edildi';
-        default: return wo.status;
-      }
-    })();
-
-    const dateStr = new Date(wo.createdAt).toLocaleDateString('tr-TR') + ' ' + new Date(wo.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-
-    const vehicleInfoHtml = relatedVehicle ? `
-      <div class="field">
-        <span class="field-label">Plaka:</span>
-        <span class="field-value" style="font-weight: bold; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${relatedVehicle.plate}</span>
-      </div>
-      <div class="field">
-        <span class="field-label">Marka / Model:</span>
-        <span class="field-value">${relatedVehicle.brand} ${relatedVehicle.model}</span>
-      </div>
-      <div class="field">
-        <span class="field-label">Yıl / Kasa:</span>
-        <span class="field-value">${relatedVehicle.year} / ${relatedVehicle.bodyType || 'Sedan'}</span>
-      </div>
-      <div class="field">
-        <span class="field-label">Araç Sahibi:</span>
-        <span class="field-value">${relatedVehicle.ownerName || '-'}</span>
-      </div>
-    ` : `
-      <div class="field" style="color: #64748b; font-style: italic;">
-        Bu iş emri için ilişkili bir araç bulunmamaktadır.
-      </div>
-    `;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>İş Emri - ${wo.orderNumber}</title>
-          <style>
-            body {
-              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-              color: #1e293b;
-              margin: 40px;
-              line-height: 1.6;
-            }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: 2px solid #0077b6;
-              padding-bottom: 20px;
-              margin-bottom: 30px;
-            }
-            .logo {
-              font-size: 24px;
-              font-weight: bold;
-              color: #03045e;
-            }
-            .doc-title {
-              text-align: right;
-            }
-            .doc-title h1 {
-              margin: 0;
-              font-size: 20px;
-              color: #0077b6;
-            }
-            .doc-title p {
-              margin: 5px 0 0 0;
-              font-size: 12px;
-              color: #64748b;
-            }
-            .grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 20px;
-              margin-bottom: 30px;
-            }
-            .card {
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 16px;
-              background-color: #f8fafc;
-            }
-            .card h3 {
-              margin-top: 0;
-              margin-bottom: 12px;
-              border-bottom: 1px solid #cbd5e1;
-              padding-bottom: 6px;
-              color: #03045e;
-              font-size: 14px;
-              text-transform: uppercase;
-            }
-            .field {
-              margin-bottom: 8px;
-              font-size: 13px;
-            }
-            .field-label {
-              font-weight: bold;
-              color: #475569;
-            }
-            .field-value {
-              color: #0f172a;
-            }
-            .description-box {
-              border: 1px solid #e2e8f0;
-              border-radius: 8px;
-              padding: 16px;
-              margin-bottom: 30px;
-            }
-            .description-box h3 {
-              margin-top: 0;
-              color: #03045e;
-              font-size: 14px;
-              text-transform: uppercase;
-              border-bottom: 1px solid #cbd5e1;
-              padding-bottom: 6px;
-            }
-            .description-content {
-              font-size: 13px;
-              white-space: pre-line;
-            }
-            .footer {
-              margin-top: 50px;
-              border-top: 1px solid #e2e8f0;
-              padding-top: 20px;
-              text-align: center;
-              font-size: 12px;
-              color: #94a3b8;
-            }
-            .signatures {
-              margin-top: 60px;
-              display: flex;
-              justify-content: space-around;
-            }
-            .signature-box {
-              text-align: center;
-              width: 200px;
-              border-top: 1px dashed #64748b;
-              padding-top: 8px;
-              font-size: 13px;
-              font-weight: bold;
-              color: #475569;
-            }
-            @media print {
-              body {
-                margin: 20px;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="logo">Sigortak</div>
-            <div class="doc-title">
-              <h1>OPERASYONEL İŞ EMRİ FORMU</h1>
-              <p>Oluşturulma Tarihi: ${dateStr}</p>
-            </div>
-          </div>
-
-          <div class="grid">
-            <div class="card">
-              <h3>İŞ EMRİ DETAYLARI</h3>
-              <div class="field">
-                <span class="field-label">İş Emri No:</span>
-                <span class="field-value" style="font-weight: bold;">${wo.orderNumber}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">İş Tipi:</span>
-                <span class="field-value">${orderTypeStr}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Öncelik:</span>
-                <span class="field-value">${priorityStr}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Durum:</span>
-                <span class="field-value">${statusStr}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Özel Notlar:</span>
-                <span class="field-value">${wo.specialNotes || '-'}</span>
-              </div>
-            </div>
-
-            <div class="card">
-              <h3>ARAÇ BİLGİLERİ</h3>
-              ${vehicleInfoHtml}
-            </div>
-          </div>
-
-          <div class="description-box">
-            <h3>İŞ AÇIKLAMASI & TALİMATLAR</h3>
-            <div class="description-content">
-              <strong>${wo.title}</strong>
-              <p>${wo.description}</p>
-            </div>
-          </div>
-
-          <div class="signatures">
-            <div class="signature-box">Düzenleyen (Ad Soyad / İmza)</div>
-            <div class="signature-box">Teslim Alan (Ad Soyad / İmza)</div>
-          </div>
-
-          <div class="footer">
-            <p>Sigortak Güvenli Araç ve Muayene Takip Sistemi</p>
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 500);
-            }
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
-
-  useEffect(() => {
-    if (token && activeMenu === 'workorders') {
-      fetchWorkOrders();
-    }
-  }, [token, activeMenu]);
-
-  const handleCreatePolicy = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError("");
-    setFormSuccess("");
-    if (!selectedVehicleId || !policyNumber || !startDate || !endDate || !premium) {
-      setFormError("Lütfen tüm alanları doldurun.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append("policyNumber", policyNumber);
-      formData.append("sbmPolicyNumber", sbmPolicyNumber);
-      formData.append("vehicleId", selectedVehicleId);
-      formData.append("startDate", startDate);
-      formData.append("endDate", endDate);
-      formData.append("premium", premium);
-      if (pdfFile) {
-        formData.append("file", pdfFile);
-      }
-
-      const res = await fetch(`${GATEWAY_URL}/api/v1/policies`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Poliçe oluşturulamadı.");
-      }
-
-      setFormSuccess("Poliçe başarıyla tanımlandı!");
-      setPolicyNumber("");
-      setSbmPolicyNumber("");
-      setSelectedVehicleId("");
-      setStartDate("");
-      setEndDate("");
-      setPremium("");
-      setPdfFile(null);
-
-      fetchVehicles();
-      setTimeout(() => {
-        setIsPolicyModalOpen(false);
-        setFormSuccess("");
-      }, 1500);
-    } catch (err: any) {
-      setFormError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const submitRenewal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError("");
-    if (!renewVehicleId || !renewPolicyNo || !renewPremium) {
-      setFormError("Lütfen alanları doldurun.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append("vehicleId", renewVehicleId);
-      formData.append("policyNumber", renewPolicyNo);
-      formData.append("sbmPolicyNumber", renewSbmPolicyNo);
-      formData.append("startDate", new Date().toISOString().split('T')[0]);
-      formData.append("endDate", new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-      formData.append("premium", renewPremium);
-
-      const res = await fetch(`${GATEWAY_URL}/api/v1/policies/renew`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Poliçe yenilenemedi.");
-      }
-
-      setNotification({ message: "Poliçe başarıyla yenilendi!", type: "success" });
-      setRenewSbmPolicyNo("");
-      setIsRenewModalOpen(false);
-      fetchVehicles();
-    } catch (err: any) {
-      setNotification({ message: "Hata oluştu: " + err.message, type: "error" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleCreateVehicle = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setVfError("");
-    setVfSuccess("");
-    if (!vfPlate || !vfBrand || !vfModel || !vfYear || !vfOwnerName) {
-      setVfError("Lütfen zorunlu alanları doldurun (Plaka, Marka, Model, Yıl, Araç Sahibi).");
-      return;
-    }
-
-    setVfSubmitting(true);
-    try {
-      const payload = {
-        plate: vfPlate.toUpperCase(),
-        brand: vfBrand,
-        model: vfModel,
-        year: parseInt(vfYear),
-        engineCapacity: vfEngineCapacity,
-        engineNumber: vfEngineNumber,
-        chassisNumber: vfChassisNumber,
-        registrationNumber: vfRegistrationNumber,
-        ownerId: "00000000-0000-0000-0000-000000000000",
-        ownerName: vfOwnerName,
-        ownerTcNo: vfOwnerTcNo,
-        ownerAddress: vfOwnerAddress,
-        usageType: vfUsageType,
-        trafficRegistrationDate: vfTrafficRegistrationDate || null,
-        bodyType: ["Sedan","OffRoad","Hatchback","Pickup","Van","Sport","Micro","Convertible","Crossover","SUV","Wagon","Muscle","Roadster","Cabriolet","Limousine","Formula1"].indexOf(vfBodyType) + 1
-      };
-
-      const res = await fetch(`${GATEWAY_URL}/api/v1/vehicles`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.status === 401) {
-        handleLogout();
-        return;
-      }
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Araç oluşturulamadı.");
-      }
-
-      setVfSuccess("Araç başarıyla eklendi! Liste güncelleniyor...");
-      // Reset form
-      setVfPlate(""); setVfBrand(""); setVfModel(""); setVfYear("");
-      setVfEngineCapacity(""); setVfEngineNumber(""); setVfChassisNumber(""); setVfRegistrationNumber("");
-      setVfOwnerName(""); setVfOwnerTcNo(""); setVfOwnerAddress(""); setVfUsageType(""); setVfTrafficRegistrationDate("");
-      setVfBodyType("Sedan");
-
-      // Give backend time to process the async RabbitMQ command
-      setTimeout(() => {
-        fetchVehicles();
-        setIsVehicleModalOpen(false);
-        setVfSuccess("");
-      }, 2000);
-    } catch (err: any) {
-      setVfError(err.message);
-    } finally {
-      setVfSubmitting(false);
     }
   };
 
@@ -1134,833 +522,86 @@ export default function App() {
       )}
 
       {/* New Work Order Modal */}
-      {isWorkOrderModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>Yeni İş Emri Oluştur</h3>
-              <button style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#94a3b8' }} onClick={() => setIsWorkOrderModalOpen(false)}>&times;</button>
-            </div>
-            <form onSubmit={handleCreateWorkOrder} style={{ padding: '24px' }}>
-              {woError && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: 12, borderRadius: 8, fontSize: '0.9rem', marginBottom: 16 }}>
-                  {woError}
-                </div>
-              )}
-              {woSuccess && (
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: 12, borderRadius: 8, fontSize: '0.9rem', marginBottom: 16 }}>
-                  {woSuccess}
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label">Başlık</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={woTitle} 
-                  onChange={e => setWoTitle(e.target.value)} 
-                  placeholder="Örn: 34ALI534 Kaza Hasar Dosyası"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Açıklama</label>
-                <textarea 
-                  className="form-input" 
-                  value={woDescription} 
-                  onChange={e => setWoDescription(e.target.value)} 
-                  placeholder="İş emri detay açıklamasını yazın..."
-                  style={{ background: '#fff', color: '#1e293b', minHeight: '80px', fontFamily: 'inherit', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px' }}
-                  required 
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">İş Tipi</label>
-                  <select 
-                    className="form-input" 
-                    value={woType} 
-                    onChange={e => setWoType(e.target.value)}
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  >
-                    <option value="1">Hasar Dosyası Açma</option>
-                    <option value="2">Eksper Atama</option>
-                    <option value="3">Poliçe Yenileme</option>
-                    <option value="4">Prim Tahsilat & İptal</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Öncelik</label>
-                  <select 
-                    className="form-input" 
-                    value={woPriority} 
-                    onChange={e => setWoPriority(e.target.value)}
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  >
-                    <option value="1">Düşük</option>
-                    <option value="2">Orta</option>
-                    <option value="3">Yüksek</option>
-                    <option value="4">Kritik</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">İlişkili Araç (Opsiyonel)</label>
-                <select 
-                  className="form-input" 
-                  value={woRelatedEntityId} 
-                  onChange={e => setWoRelatedEntityId(e.target.value)}
-                  style={{ background: '#fff', color: '#1e293b' }}
-                >
-                  <option value="">İlişkili araç seçin...</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>{v.plate} - {v.brand} {v.model}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Özel Notlar</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={woSpecialNotes} 
-                  onChange={e => setWoSpecialNotes(e.target.value)} 
-                  placeholder="Eksper ismi, acil durum detayları..."
-                  style={{ background: '#fff', color: '#1e293b' }}
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }} disabled={woSubmitting}>
-                {woSubmitting ? "Oluşturuluyor..." : "İş Emrini Oluştur"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateWorkOrderModal
+        isOpen={isWorkOrderModalOpen}
+        onClose={() => setIsWorkOrderModalOpen(false)}
+        vehicles={vehicles}
+        onSuccess={() => {
+          fetchWorkOrders();
+          setNotification({ message: "İş emri başarıyla oluşturuldu.", type: "success" });
+        }}
+        token={token || ""}
+        gatewayUrl={GATEWAY_URL}
+      />
 
       {/* Define Policy Modal */}
-      {isPolicyModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '500px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>Yeni Poliçe Tanımla</h3>
-              <button style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#94a3b8' }} onClick={() => setIsPolicyModalOpen(false)}>&times;</button>
-            </div>
-            <form onSubmit={handleCreatePolicy} style={{ padding: '24px' }}>
-              {formError && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: 12, borderRadius: 8, fontSize: '0.9rem', marginBottom: 16 }}>
-                  {formError}
-                </div>
-              )}
-              {formSuccess && (
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: 12, borderRadius: 8, fontSize: '0.9rem', marginBottom: 16 }}>
-                  {formSuccess}
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label">Araç Seçin</label>
-                <select 
-                  className="form-input" 
-                  value={selectedVehicleId} 
-                  onChange={e => setSelectedVehicleId(e.target.value)}
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  required
-                >
-                  <option value="">Araç Seçin...</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.id}>{v.plate} - {v.brand} {v.model}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Poliçe Numarası</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={policyNumber} 
-                  onChange={e => setPolicyNumber(e.target.value)} 
-                  placeholder="Örn: POL-987654"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">SBM Poliçe Numarası</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={sbmPolicyNumber} 
-                  onChange={e => setSbmPolicyNumber(e.target.value)} 
-                  placeholder="Örn: 701161329"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">Başlangıç Tarihi</label>
-                  <input 
-                    type="date" 
-                    className="form-input" 
-                    value={startDate} 
-                    onChange={e => setStartDate(e.target.value)} 
-                    style={{ background: '#fff', color: '#1e293b' }}
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Bitiş Tarihi</label>
-                  <input 
-                    type="date" 
-                    className="form-input" 
-                    value={endDate} 
-                    onChange={e => setEndDate(e.target.value)} 
-                    style={{ background: '#fff', color: '#1e293b' }}
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Prim Tutarı (TL)</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  value={premium} 
-                  onChange={e => setPremium(e.target.value)} 
-                  placeholder="Örn: 12500"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Poliçe Belgesi (PDF)</label>
-                <input 
-                  type="file" 
-                  accept="application/pdf"
-                  className="form-input" 
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  onChange={e => setPdfFile(e.target.files ? e.target.files[0] : null)} 
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }} disabled={submitting}>
-                {submitting ? "Kaydediliyor..." : "Poliçeyi Kaydet ve Yayınla"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreatePolicyModal
+        isOpen={isPolicyModalOpen}
+        onClose={() => setIsPolicyModalOpen(false)}
+        vehicles={vehicles}
+        onSuccess={() => {
+          fetchVehicles();
+          setNotification({ message: "Poliçe başarıyla tanımlandı!", type: "success" });
+        }}
+        token={token || ""}
+        gatewayUrl={GATEWAY_URL}
+        initialVehicleId={selectedVehicleId}
+      />
 
       {/* Renew Policy Modal */}
-      {isRenewModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="glass-panel" style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-deep-twilight)' }}>Poliçe Yenile</h3>
-              <button style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#94a3b8' }} onClick={() => setIsRenewModalOpen(false)}>&times;</button>
-            </div>
-            <form onSubmit={submitRenewal} style={{ padding: '24px' }}>
-              <div className="form-group">
-                <label className="form-label">Yeni Poliçe Numarası</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={renewPolicyNo} 
-                  onChange={e => setRenewPolicyNo(e.target.value)} 
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  required 
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Yeni SBM Poliçe Numarası</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={renewSbmPolicyNo} 
-                  onChange={e => setRenewSbmPolicyNo(e.target.value)} 
-                  placeholder="Örn: 701161329"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Yeni Prim Tutarı (TL)</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  value={renewPremium} 
-                  onChange={e => setRenewPremium(e.target.value)} 
-                  placeholder="Örn: 15000"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                  required 
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
-                Poliçeyi Yenile
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <RenewPolicyModal
+        isOpen={isRenewModalOpen}
+        onClose={() => setIsRenewModalOpen(false)}
+        vehicleId={renewVehicleId}
+        policyNumber={renewPolicyNo}
+        onSuccess={() => {
+          fetchVehicles();
+          setNotification({ message: "Poliçe başarıyla yenilendi!", type: "success" });
+        }}
+        token={token || ""}
+        gatewayUrl={GATEWAY_URL}
+      />
 
       {/* Detail Vehicle Modal */}
-      {detailVehicle && (
-        <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(3, 4, 94, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => setDetailVehicle(null)}
-        >
-          <div 
-            style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '540px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div style={{ background: 'var(--color-deep-twilight)', color: '#fff', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="plate-badge">{detailVehicle.plate}</div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Araç Detayı</h3>
-              </div>
-              <button 
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '30px', height: '30px', borderRadius: '6px', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={() => setDetailVehicle(null)}
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: '24px' }}>
-              <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-twilight)', marginBottom: '8px' }}>
-                {detailVehicle.year} {detailVehicle.brand} {detailVehicle.model}
-              </h4>
-
-              {!detailVehicle.inspectionDate && (
-                <div style={{
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
-                  marginBottom: '16px',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '10px',
-                  color: '#b91c1c'
-                }}>
-                  <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: '18px', marginTop: '2px' }}></i>
-                  <div>
-                    <strong style={{ display: 'block', fontSize: '13px', marginBottom: '2px' }}>UYUMLULUK (COMPLIANCE) UYARISI: Muayene Girilmedi!</strong>
-                    <span style={{ fontSize: '12px', lineHeight: '1.4', display: 'block', opacity: 0.9 }}>
-                      Bu aracın geçerli bir TÜVTÜRK muayenesi bulunmamaktadır. Kasko ve hasar ödemelerinde ret veya rücu riski, ayrıca sahada trafikten men ve ceza alma riski bulunmaktadır.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Owner Specs */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9' }}>
-                <div>
-                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Araç Sahibi</span>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{detailVehicle.ownerName || 'Bilinmiyor'}</span>
-                </div>
-                {detailVehicle.ownerTcNo && (
-                  <div>
-                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>T.C. Kimlik No</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{detailVehicle.ownerTcNo}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Technical Specs */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
-                <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <i className="fa-solid fa-clipboard-check" style={{ color: 'var(--color-bright-teal)' }}></i>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Muayene Durumu</span>
-                  </div>
-                  {detailVehicle.inspectionDate ? getStatusBadge(detailVehicle.inspectionStatus) : <span className="badge" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: 700 }}>MUAYENE GİRİLMEDİ</span>}
-                  <div style={{ marginTop: '8px', fontSize: '13px', color: '#334155' }}>
-                    {detailVehicle.inspectionDate && detailVehicle.inspectionRemainingDays !== undefined ? `${detailVehicle.inspectionRemainingDays} gün kaldı` : 'Kayıt Yok'}
-                  </div>
-                  {detailVehicle.inspectionDate && (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Son Muayene: {new Date(detailVehicle.inspectionDate).toLocaleDateString('tr-TR')}</div>
-                  )}
-                </div>
-
-                <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <i className="fa-solid fa-shield-halved" style={{ color: 'var(--color-bright-teal)' }}></i>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sigorta Durumu</span>
-                  </div>
-                  {getStatusBadge(detailVehicle.insuranceStatus)}
-                  <div style={{ marginTop: '8px', fontSize: '13px', color: '#334155' }}>
-                    {detailVehicle.insuranceRemainingDays !== undefined ? `${detailVehicle.insuranceRemainingDays} gün kaldı` : 'Bilgi yok'}
-                  </div>
-                  {detailVehicle.insuranceEndDate && (
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Bitiş: {new Date(detailVehicle.insuranceEndDate).toLocaleDateString('tr-TR')}</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Policy Section */}
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-deep-twilight)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <i className="fa-solid fa-file-contract" style={{ color: 'var(--color-bright-teal)' }}></i>
-                  Poliçe Bilgileri
-                </h3>
-
-                {detailVehicle.policyId ? (
-                  <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <tbody>
-                        <tr>
-                          <td style={{ padding: '12px 16px', background: '#f8fafc', fontWeight: 600, color: '#64748b', width: '40%', borderBottom: '1px solid var(--border-color)' }}>Poliçe No</td>
-                          <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-deep-twilight)', borderBottom: '1px solid var(--border-color)' }}>{detailVehicle.policyNumber}</td>
-                        </tr>
-                        {detailVehicle.sbmPolicyNumber && (
-                          <tr>
-                            <td style={{ padding: '12px 16px', background: '#f8fafc', fontWeight: 600, color: '#64748b', borderBottom: '1px solid var(--border-color)' }}>SBM Poliçe No</td>
-                            <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--color-deep-twilight)', borderBottom: '1px solid var(--border-color)' }}>{detailVehicle.sbmPolicyNumber}</td>
-                          </tr>
-                        )}
-                        <tr>
-                          <td style={{ padding: '12px 16px', background: '#f8fafc', fontWeight: 600, color: '#64748b', borderBottom: '1px solid var(--border-color)' }}>Başlangıç Tarihi</td>
-                          <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>{detailVehicle.policyStartDate ? new Date(detailVehicle.policyStartDate).toLocaleDateString('tr-TR') : '-'}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '12px 16px', background: '#f8fafc', fontWeight: 600, color: '#64748b', borderBottom: '1px solid var(--border-color)' }}>Bitiş Tarihi</td>
-                          <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)' }}>{detailVehicle.policyEndDate ? new Date(detailVehicle.policyEndDate).toLocaleDateString('tr-TR') : '-'}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '12px 16px', background: '#f8fafc', fontWeight: 600, color: '#64748b' }}>Prim Tutarı</td>
-                          <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--color-bright-teal)' }}>{detailVehicle.policyPremium?.toLocaleString('tr-TR')} ₺</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div style={{ border: '1px dashed #e2e8f0', borderRadius: '10px', padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
-                    <i className="fa-solid fa-circle-info" style={{ fontSize: '24px', marginBottom: '8px', display: 'block' }}></i>
-                    Bu araca henüz bir poliçe tanımlanmamıştır.
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '12px' }}>
-                {detailVehicle.policyId ? (
-                  <>
-                    {detailVehicle.policyDocumentUrl && (
-                      <a
-                        href={`${GATEWAY_URL}${detailVehicle.policyDocumentUrl}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-secondary"
-                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: '#f1f5f9', borderRadius: '10px', textDecoration: 'none', fontWeight: 600 }}
-                      >
-                        <i className="fa-solid fa-file-pdf" style={{ color: '#dc2626' }}></i> Poliçe PDF
-                      </a>
-                    )}
-                    <button
-                      className="btn btn-primary"
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px' }}
-                      onClick={() => {
-                        setRenewVehicleId(detailVehicle.id);
-                        setRenewPolicyNo(detailVehicle.policyNumber + "-R");
-                        setDetailVehicle(null);
-                        setIsRenewModalOpen(true);
-                      }}
-                    >
-                      <i className="fa-solid fa-arrows-rotate"></i> Poliçeyi Yenile
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    className="btn btn-primary"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '10px' }}
-                    onClick={() => {
-                      setSelectedVehicleId(detailVehicle.id);
-                      setDetailVehicle(null);
-                      setIsPolicyModalOpen(true);
-                    }}
-                  >
-                    <i className="fa-solid fa-plus"></i> Yeni Poliçe Tanımla
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <VehicleDetailModal
+        vehicle={detailVehicle}
+        onClose={() => setDetailVehicle(null)}
+        onOpenRenewModal={(vehicleId, policyNumber) => {
+          setRenewVehicleId(vehicleId);
+          setRenewPolicyNo(policyNumber);
+          setDetailVehicle(null);
+          setIsRenewModalOpen(true);
+        }}
+        onOpenCreatePolicyModal={(vehicleId) => {
+          setSelectedVehicleId(vehicleId);
+          setDetailVehicle(null);
+          setIsPolicyModalOpen(true);
+        }}
+        gatewayUrl={GATEWAY_URL}
+      />
 
       {/* New Vehicle Modal */}
-      {isVehicleModalOpen && (
-        <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(3, 4, 94, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => setIsVehicleModalOpen(false)}
-        >
-          <div 
-            style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div style={{ background: 'var(--color-deep-twilight)', color: '#fff', padding: '20px 28px', borderRadius: '16px 16px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <i className="fa-solid fa-car-side" style={{ fontSize: '20px' }}></i>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Yeni Araç Ekle</h3>
-              </div>
-              <button 
-                style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                onClick={() => setIsVehicleModalOpen(false)}
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
+      <CreateVehicleModal
+        isOpen={isVehicleModalOpen}
+        onClose={() => {
+          setIsVehicleModalOpen(false);
+          setInitialVehicleValues(null);
+        }}
+        onSuccess={() => {
+          fetchVehicles();
+        }}
+        token={token || ""}
+        gatewayUrl={GATEWAY_URL}
+        initialValues={initialVehicleValues}
+      />
 
-            {/* Modal Body */}
-            <form onSubmit={handleCreateVehicle} style={{ padding: '24px 28px' }}>
-              {vfError && (
-                <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#dc2626', padding: 12, borderRadius: 8, fontSize: '0.9rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <i className="fa-solid fa-circle-exclamation"></i> {vfError}
-                </div>
-              )}
-              {vfSuccess && (
-                <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#059669', padding: 12, borderRadius: 8, fontSize: '0.9rem', marginBottom: 16, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <i className="fa-solid fa-circle-check"></i> {vfSuccess}
-                </div>
-              )}
-
-              {/* Araç Sahibi Bilgileri */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-user" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Araç Sahibi *
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfOwnerName} 
-                    onChange={e => setVfOwnerName(e.target.value)} 
-                    placeholder="Örn: Ahmet Yılmaz"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-id-card" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    T.C. Kimlik / Vergi No
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfOwnerTcNo} 
-                    onChange={e => setVfOwnerTcNo(e.target.value)} 
-                    placeholder="11 haneli T.C. No"
-                    maxLength={11}
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <i className="fa-solid fa-location-dot" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                  Adres
-                </label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={vfOwnerAddress} 
-                  onChange={e => setVfOwnerAddress(e.target.value)} 
-                  placeholder="Müşteri adresi"
-                  style={{ background: '#fff', color: '#1e293b' }}
-                />
-              </div>
-
-              {/* Plaka */}
-              <div className="form-group">
-                <label className="form-label">
-                  <i className="fa-solid fa-id-badge" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                  Plaka *
-                </label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={vfPlate} 
-                  onChange={e => setVfPlate(e.target.value)} 
-                  placeholder="Örn: 34 ABC 123"
-                  style={{ background: '#fff', color: '#1e293b', textTransform: 'uppercase' }}
-                  required 
-                />
-              </div>
-
-              {/* Marka + Model Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group" style={{ position: 'relative' }}>
-                  <label className="form-label">
-                    <i className="fa-solid fa-industry" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Marka *
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfBrand} 
-                    onChange={e => {
-                      setVfBrand(e.target.value);
-                      setShowBrandSuggestions(true);
-                    }} 
-                    onFocus={() => setShowBrandSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowBrandSuggestions(false), 200)}
-                    placeholder="Örn: Toyota"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                    required 
-                  />
-                  {showBrandSuggestions && brandSuggestions.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      backgroundColor: '#ffffff',
-                      border: '2px solid var(--color-bright-teal)',
-                      borderRadius: '8px',
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      zIndex: 1000,
-                      marginTop: '4px'
-                    }}>
-                      {brandSuggestions.map((brand, idx) => (
-                        <div 
-                          key={idx}
-                          onMouseDown={() => {
-                            setVfBrand(brand);
-                            setShowBrandSuggestions(false);
-                          }}
-                          style={{
-                            padding: '10px 14px',
-                            color: 'var(--color-deep-twilight)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            fontSize: '0.9rem',
-                            fontWeight: 500
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--color-light-cyan)';
-                            e.currentTarget.style.color = 'var(--color-bright-teal)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                            e.currentTarget.style.color = 'var(--color-deep-twilight)';
-                          }}
-                        >
-                          {brand}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-car" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Model *
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfModel} 
-                    onChange={e => setVfModel(e.target.value)} 
-                    placeholder="Örn: Corolla"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                    required 
-                  />
-                </div>
-              </div>
-
-              {/* Yıl + Motor Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-calendar" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Yıl *
-                  </label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={vfYear} 
-                    onChange={e => setVfYear(e.target.value)} 
-                    placeholder="Örn: 2023"
-                    min="1950" max="2030"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                    required 
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-gauge-high" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Motor Hacmi (Litre)
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfEngineCapacity} 
-                    onChange={e => setVfEngineCapacity(e.target.value)} 
-                    placeholder="Örn: 1.6"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-gears" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Motor Numarası
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfEngineNumber} 
-                    onChange={e => setVfEngineNumber(e.target.value)} 
-                    placeholder="Motor no"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-              </div>
-
-              {/* Kasa Tipi + Kullanım Tarzı + Tescil Tarihi Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-truck-pickup" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Kasa Tipi
-                  </label>
-                  <select 
-                    className="form-input" 
-                    value={vfBodyType} 
-                    onChange={e => setVfBodyType(e.target.value)}
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  >
-                    {["Sedan","OffRoad","Hatchback","Pickup","Van","Sport","Micro","Convertible","Crossover","SUV","Wagon","Muscle","Roadster","Cabriolet","Limousine"].map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-briefcase" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Kullanım Tarzı
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfUsageType} 
-                    onChange={e => setVfUsageType(e.target.value)} 
-                    placeholder="Örn: Otomobil Hususi"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-calendar-check" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Tescil Tarihi
-                  </label>
-                  <input 
-                    type="date" 
-                    className="form-input" 
-                    value={vfTrafficRegistrationDate} 
-                    onChange={e => setVfTrafficRegistrationDate(e.target.value)} 
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-              </div>
-
-              {/* Şasi No + Ruhsat No Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-barcode" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Şasi Numarası
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfChassisNumber} 
-                    onChange={e => setVfChassisNumber(e.target.value)} 
-                    placeholder="17 haneli şasi no"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    <i className="fa-solid fa-file-lines" style={{ marginRight: '6px', color: 'var(--color-bright-teal)' }}></i>
-                    Ruhsat Numarası
-                  </label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={vfRegistrationNumber} 
-                    onChange={e => setVfRegistrationNumber(e.target.value)} 
-                    placeholder="Ruhsat seri no"
-                    style={{ background: '#fff', color: '#1e293b' }}
-                  />
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
-                style={{ width: '100%', justifyContent: 'center', marginTop: 20, padding: '14px', fontSize: '15px' }} 
-                disabled={vfSubmitting}
-              >
-                {vfSubmitting ? (
-                  <><i className="fa-solid fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>Kaydediliyor...</>
-                ) : (
-                  <><i className="fa-solid fa-check" style={{ marginRight: '8px' }}></i>Aracı Kaydet</>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
+      {/* Toast Notification */}
       {notification && (
-        <div style={{
-          position: 'fixed',
-          top: '24px',
-          right: '24px',
-          background: notification.type === 'success' ? '#ecfdf5' : notification.type === 'error' ? '#fef2f2' : '#eff6ff',
-          color: notification.type === 'success' ? '#065f46' : notification.type === 'error' ? '#991b1b' : '#1e40af',
-          border: `1px solid ${notification.type === 'success' ? '#a7f3d0' : notification.type === 'error' ? '#fca5a5' : '#bfdbfe'}`,
-          padding: '16px 20px',
-          borderRadius: '12px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          minWidth: '320px',
-          maxWidth: '450px'
-        }}>
-          <i className={`fa-solid ${notification.type === 'success' ? 'fa-circle-check' : notification.type === 'error' ? 'fa-circle-xmark' : 'fa-circle-info'}`} style={{ fontSize: '20px' }}></i>
-          <div style={{ flex: 1, fontSize: '14px', fontWeight: 600 }}>{notification.message}</div>
-          <button 
-            onClick={() => setNotification(null)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
-          >
-            <i className="fa-solid fa-xmark"></i>
-          </button>
-        </div>
+        <ToastNotification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
       )}
     </MainLayout>
   );

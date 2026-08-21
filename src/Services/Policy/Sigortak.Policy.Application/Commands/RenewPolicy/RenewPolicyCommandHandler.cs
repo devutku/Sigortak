@@ -91,6 +91,7 @@ public class RenewPolicyCommandHandler : IRequestHandler<RenewPolicyCommand, Res
             policy.DocumentUrl,
             (int)policy.PolicyType
         );
+        policyRenewedEvent.TenantId = policy.TenantId;
 
         await _eventBus.PublishAsync(policyRenewedEvent, cancellationToken);
 
