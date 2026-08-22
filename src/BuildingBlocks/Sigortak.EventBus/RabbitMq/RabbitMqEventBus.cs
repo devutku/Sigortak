@@ -52,7 +52,7 @@ public class RabbitMqEventBus : IEventBus, IDisposable
             settings.HostName, settings.Port, settings.VirtualHost);
     }
 
-    public Task PublishAsync<T>(T @event, CancellationToken cancellationToken = default)
+    public virtual Task PublishAsync<T>(T @event, CancellationToken cancellationToken = default)
         where T : IntegrationEvent
     {
         var routingKey = @event.EventTypeName;

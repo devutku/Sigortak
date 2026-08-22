@@ -15,6 +15,13 @@ public class KafkaEventBus : IEventBus, IDisposable
     private readonly ILogger<KafkaEventBus> _logger;
     private readonly string _defaultTopic;
 
+    protected KafkaEventBus()
+    {
+        _producer = null!;
+        _logger = null!;
+        _defaultTopic = null!;
+    }
+
     public KafkaEventBus(
         KafkaSettings settings,
         ILogger<KafkaEventBus> logger)
@@ -40,7 +47,7 @@ public class KafkaEventBus : IEventBus, IDisposable
             settings.BootstrapServers, settings.DefaultTopic);
     }
 
-    public async Task PublishAsync<T>(T @event, CancellationToken cancellationToken = default)
+    public virtual async Task PublishAsync<T>(T @event, CancellationToken cancellationToken = default)
         where T : IntegrationEvent
     {
         var topic = _defaultTopic;
