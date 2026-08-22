@@ -2,6 +2,8 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Yarp.ReverseProxy.Transforms;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -65,6 +67,19 @@ try
 
     builder.Services.AddAuthorization();
 
+    // Rate Limiter
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.AddFixedWindowLimiter("api-limiter", opt =>
+        {
+            opt.Window = TimeSpan.FromSeconds(10);
+            opt.PermitLimit = 5; // Max 5 requests per 10 seconds for testing
+            opt.QueueLimit = 0; // Disable queue for testing so overflow is immediately rejected
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        });
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    });
+
     // CORS
     builder.Services.AddCors(options =>
     {
@@ -79,6 +94,7 @@ try
     var app = builder.Build();
 
     app.UseCors("AllowAll");
+    app.UseRateLimiter();
 
     app.UseAuthentication();
     app.UseAuthorization();

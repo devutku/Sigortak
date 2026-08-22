@@ -1,16 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, NavLink } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 
 interface MainLayoutProps {
-  activeMenu: string;
-  setActiveMenu: (menu: any) => void;
   handleLogout: () => void;
   children: React.ReactNode;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ activeMenu, setActiveMenu, handleLogout, children }) => {
+export const MainLayout: React.FC<MainLayoutProps> = ({ handleLogout, children }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Strip leading slash to match menu cases (e.g. "/dashboard" -> "dashboard")
+  const activeMenu = location.pathname.substring(1) || 'dashboard';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -21,6 +25,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ activeMenu, setActiveMen
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
   const getMenuLabel = () => {
     switch (activeMenu) {
       case 'dashboard': return 'Kontrol Paneli';
@@ -57,11 +62,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ activeMenu, setActiveMen
 
   return (
     <div className="app-container">
-      <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
+      {isSidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+      )}
+
       <main className="main-content">
         <header className="header">
           <div className="breadcrumb">
-            <i className="fa-solid fa-sidebar-toggle sidebar-trigger"></i>
+            <i className="fa-solid fa-bars sidebar-trigger" onClick={() => setIsSidebarOpen(!isSidebarOpen)}></i>
             <span>{getMenuLabel()}</span>
             <i className="fa-solid fa-chevron-right separator"></i>
             <span className="active">{getSubMenuLabel()}</span>
@@ -146,6 +156,22 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ activeMenu, setActiveMen
           {children}
         </div>
       </main>
+
+      {/* Sticky Bottom Navigation for Mobile */}
+      <nav className="mobile-bottom-nav">
+        <NavLink to="/dashboard" className={({ isActive }) => `mobile-bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <i className="fa-solid fa-house"></i>
+          <span>Ana Sayfa</span>
+        </NavLink>
+        <NavLink to="/vehicles" className={({ isActive }) => `mobile-bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <i className="fa-solid fa-car"></i>
+          <span>Araçlar</span>
+        </NavLink>
+        <NavLink to="/policies" className={({ isActive }) => `mobile-bottom-nav-item ${isActive ? 'active' : ''}`}>
+          <i className="fa-solid fa-file-contract"></i>
+          <span>Poliçeler</span>
+        </NavLink>
+      </nav>
     </div>
   );
 };

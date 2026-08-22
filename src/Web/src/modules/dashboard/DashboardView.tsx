@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Vehicle, Quote } from '../../types';
 
 interface DashboardViewProps {
   vehicles: Vehicle[];
   quotes: Quote[];
-  setActiveMenu: (menu: any) => void;
   onApproveQuote: (id: string) => Promise<void>;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   vehicles,
   quotes,
-  setActiveMenu,
   onApproveQuote
 }) => {
+  const navigate = useNavigate();
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<number | null>(null);
 
   const activeQuotes = quotes.filter(q => q.status === 0);
@@ -107,7 +107,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
           <button 
             className="btn" 
-            onClick={() => setActiveMenu('inspections')}
+            onClick={() => navigate('/inspections')}
             style={{ 
               background: '#ef4444', 
               color: '#fff', 
@@ -159,7 +159,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button 
                     className="btn btn-secondary"
-                    onClick={() => setActiveMenu('quotes')}
+                    onClick={() => navigate('/quotes')}
                     style={{ padding: '8px 16px', fontSize: '13px' }}
                   >
                     Karsilastir
@@ -364,7 +364,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                               <button 
                                 className="btn btn-primary" 
                                 style={{ padding: '4px 10px', fontSize: '11px' }}
-                                onClick={() => setActiveMenu(destinationMenu)}
+                                onClick={() => navigate('/' + destinationMenu)}
                               >
                                 {actionLabel}
                               </button>

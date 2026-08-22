@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 
 import type { Vehicle, Quote } from './types';
@@ -29,6 +30,10 @@ const GATEWAY_URL = "http://localhost:5000";
 
 
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPath = location.pathname;
+
   const [showSplash, setShowSplash] = useState(true);
   const [token, setToken] = useState<string | null>(localStorage.getItem("accessToken"));
   const [username, setUsername] = useState("");
@@ -61,7 +66,6 @@ export default function App() {
   }, [notification]);
   
   // Navigation & filtering states matching Web_old
-  const [activeMenu, setActiveMenu] = useState<'vehicles' | 'dashboard' | 'add-policy' | 'customers' | 'workorders' | 'policies' | 'inspections' | 'fleet' | 'reminders' | 'quotes' | 'billing' | 'calendar'>('vehicles');
   const [activeFilter, setActiveFilter] = useState<'active' | 'archived'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [detailVehicle, setDetailVehicle] = useState<Vehicle | null>(null);
@@ -101,25 +105,25 @@ export default function App() {
 
   useEffect(() => {
     if (token) {
-      if (activeMenu === 'quotes' || activeMenu === 'dashboard' || activeMenu === 'calendar') {
+      if (currentPath === '/quotes' || currentPath === '/dashboard' || currentPath === '/calendar') {
         fetchQuotes();
       }
       if (
-        activeMenu === 'vehicles' || 
-        activeMenu === 'dashboard' || 
-        activeMenu === 'calendar' || 
-        activeMenu === 'policies' || 
-        activeMenu === 'inspections' || 
-        activeMenu === 'customers' ||
-        activeMenu === 'fleet'
+        currentPath === '/vehicles' || 
+        currentPath === '/dashboard' || 
+        currentPath === '/calendar' || 
+        currentPath === '/policies' || 
+        currentPath === '/inspections' || 
+        currentPath === '/customers' ||
+        currentPath === '/fleet'
       ) {
         fetchVehicles();
       }
-      if (activeMenu === 'workorders') {
+      if (currentPath === '/workorders') {
         fetchWorkOrders();
       }
     }
-  }, [token, activeMenu]);
+  }, [token, currentPath]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,7 +315,7 @@ export default function App() {
       await api.renewPolicy(GATEWAY_URL, formData, token || "");
       setNotification({ message: "Poliçe başarıyla portföye kaydedildi ve araçla ilişkilendirildi!", type: "success" });
       fetchVehicles();
-      setActiveMenu('policies');
+      navigate('/policies');
     } catch (err: any) {
       console.error("Poliçe kaydetme hatası:", err);
       setNotification({ message: "Hata oluştu: Poliçe kaydedilemedi.", type: "error" });
@@ -414,112 +418,114 @@ export default function App() {
   }
 
   return (
-    <MainLayout activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout}>
-      {activeMenu === 'dashboard' && (
-        <DashboardView 
-          vehicles={vehicles} 
-          quotes={quotes} 
-          setActiveMenu={setActiveMenu} 
-          onApproveQuote={handleApproveQuote}
-        />
-      )}
-      {activeMenu === 'calendar' && (
-        <DashboardView 
-          vehicles={vehicles} 
-          quotes={quotes} 
-          setActiveMenu={setActiveMenu} 
-          onApproveQuote={handleApproveQuote}
-        />
-      )}
-      {activeMenu === 'customers' && (
-        <CustomersView
-          vehicles={vehicles}
-          customerSearchTerm={customerSearchTerm}
-          setCustomerSearchTerm={setCustomerSearchTerm}
-          loading={loading}
-          GATEWAY_URL={GATEWAY_URL}
-          setRenewVehicleId={setRenewVehicleId}
-          setRenewPolicyNo={setRenewPolicyNo}
-          setIsRenewModalOpen={setIsRenewModalOpen}
-          setSelectedVehicleId={setSelectedVehicleId}
-          setIsPolicyModalOpen={setIsPolicyModalOpen}
-        />
-      )}
-      {activeMenu === 'vehicles' && (
-        <VehiclesView
-          filteredVehicles={filteredVehicles}
-          activeFilter={activeFilter}
-          setActiveFilter={setActiveFilter}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          setIsVehicleModalOpen={setIsVehicleModalOpen}
-          setRenewVehicleId={setRenewVehicleId}
-          setRenewPolicyNo={setRenewPolicyNo}
-          setIsRenewModalOpen={setIsRenewModalOpen}
-          setSelectedVehicleId={setSelectedVehicleId}
-          setIsPolicyModalOpen={setIsPolicyModalOpen}
-          setDetailVehicle={setDetailVehicle}
-          loading={loading}
-          GATEWAY_URL={GATEWAY_URL}
-          getStatusBadge={getStatusBadge}
-        />
-      )}
-      {activeMenu === 'policies' && (
-        <PoliciesView
-          vehicles={vehicles}
-          onOpenRenewModal={(vehicleId, policyNumber) => {
-            setRenewVehicleId(vehicleId);
-            setRenewPolicyNo(policyNumber + "-R");
-            setIsRenewModalOpen(true);
-          }}
-          GATEWAY_URL={GATEWAY_URL}
-        />
-      )}
-      {activeMenu === 'add-policy' && (
-        <OCRUploadView onSavePolicy={handleSavePolicy} vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
-      )}
-      {activeMenu === 'inspections' && (
-        <InspectionsView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
-      )}
-      {activeMenu === 'fleet' && (
-        <FleetView
-          vehicles={vehicles}
-          onAddVehicles={handleAddVehicles}
-          onRequestBulkQuote={handleRequestBulkQuote}
-        />
-      )}
-      {activeMenu === 'workorders' && (
-        <WorkOrdersView
-          workOrders={workOrders}
-          setIsWorkOrderModalOpen={setIsWorkOrderModalOpen}
-          handlePrintWorkOrder={handlePrintWorkOrder}
-          handleUpdateWorkOrderStatus={handleUpdateWorkOrderStatus}
-          loading={loading}
-        />
-      )}
-      {activeMenu === 'quotes' && (
-        <QuotesView
-          quotes={quotes}
-          onApproveQuote={handleApproveQuote}
-          onRejectQuote={handleRejectQuote}
-          GATEWAY_URL={GATEWAY_URL}
-        />
-      )}
-      {activeMenu === 'billing' && (
-        <BillingView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
-      )}
-      {activeMenu === 'reminders' && (
-        <RemindersView
-          vehicles={vehicles}
-          onOpenRenewModal={(vehicleId, policyNumber) => {
-            setRenewVehicleId(vehicleId);
-            setRenewPolicyNo(policyNumber + "-R");
-            setIsRenewModalOpen(true);
-          }}
-        />
-      )}
+    <MainLayout handleLogout={handleLogout}>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={
+          <DashboardView 
+            vehicles={vehicles} 
+            quotes={quotes} 
+            onApproveQuote={handleApproveQuote}
+          />
+        } />
+        <Route path="/calendar" element={
+          <DashboardView 
+            vehicles={vehicles} 
+            quotes={quotes} 
+            onApproveQuote={handleApproveQuote}
+          />
+        } />
+        <Route path="/customers" element={
+          <CustomersView
+            vehicles={vehicles}
+            customerSearchTerm={customerSearchTerm}
+            setCustomerSearchTerm={setCustomerSearchTerm}
+            loading={loading}
+            GATEWAY_URL={GATEWAY_URL}
+            setRenewVehicleId={setRenewVehicleId}
+            setRenewPolicyNo={setRenewPolicyNo}
+            setIsRenewModalOpen={setIsRenewModalOpen}
+            setSelectedVehicleId={setSelectedVehicleId}
+            setIsPolicyModalOpen={setIsPolicyModalOpen}
+          />
+        } />
+        <Route path="/vehicles" element={
+          <VehiclesView
+            filteredVehicles={filteredVehicles}
+            activeFilter={activeFilter}
+            setActiveFilter={setActiveFilter}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            setIsVehicleModalOpen={setIsVehicleModalOpen}
+            setRenewVehicleId={setRenewVehicleId}
+            setRenewPolicyNo={setRenewPolicyNo}
+            setIsRenewModalOpen={setIsRenewModalOpen}
+            setSelectedVehicleId={setSelectedVehicleId}
+            setIsPolicyModalOpen={setIsPolicyModalOpen}
+            setDetailVehicle={setDetailVehicle}
+            loading={loading}
+            GATEWAY_URL={GATEWAY_URL}
+            getStatusBadge={getStatusBadge}
+          />
+        } />
+        <Route path="/policies" element={
+          <PoliciesView
+            vehicles={vehicles}
+            onOpenRenewModal={(vehicleId, policyNumber) => {
+              setRenewVehicleId(vehicleId);
+              setRenewPolicyNo(policyNumber + "-R");
+              setIsRenewModalOpen(true);
+            }}
+            GATEWAY_URL={GATEWAY_URL}
+          />
+        } />
+        <Route path="/add-policy" element={
+          <OCRUploadView onSavePolicy={handleSavePolicy} vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
+        } />
+        <Route path="/inspections" element={
+          <InspectionsView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
+        } />
+        <Route path="/fleet" element={
+          <FleetView
+            vehicles={vehicles}
+            onAddVehicles={handleAddVehicles}
+            onRequestBulkQuote={handleRequestBulkQuote}
+          />
+        } />
+        <Route path="/workorders" element={
+          <WorkOrdersView
+            workOrders={workOrders}
+            setIsWorkOrderModalOpen={setIsWorkOrderModalOpen}
+            handlePrintWorkOrder={handlePrintWorkOrder}
+            handleUpdateWorkOrderStatus={handleUpdateWorkOrderStatus}
+            loading={loading}
+          />
+        } />
+        <Route path="/quotes" element={
+          <QuotesView
+            quotes={quotes}
+            onApproveQuote={handleApproveQuote}
+            onRejectQuote={handleRejectQuote}
+            GATEWAY_URL={GATEWAY_URL}
+          />
+        } />
+        <Route path="/billing" element={
+          <BillingView vehicles={vehicles} GATEWAY_URL={GATEWAY_URL} />
+        } />
+        <Route path="/reminders" element={
+          <RemindersView
+            vehicles={vehicles}
+            onOpenRenewModal={(vehicleId, policyNumber) => {
+              setRenewVehicleId(vehicleId);
+              setRenewPolicyNo(policyNumber + "-R");
+              setIsRenewModalOpen(true);
+            }}
+          />
+        } />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
 
       {/* New Work Order Modal */}
       <CreateWorkOrderModal

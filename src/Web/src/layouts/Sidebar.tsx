@@ -1,110 +1,111 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 
 interface SidebarProps {
-  activeMenu: string;
-  setActiveMenu: (menu: any) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, setActiveMenu }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="logo">
           <i className="fa-solid fa-car-burst"></i>
           <span>Sigortak</span>
         </div>
-        <div className="subtitle-wrapper">
-          <span className="subtitle">Araç Yönetim Paneli</span>
-        </div>
+        <button className="sidebar-close-btn" onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>
+          <i className="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
       <nav className="sidebar-menu">
         <div className="menu-label">KONTROL PANELİ</div>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'dashboard' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('dashboard'); }}
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-chart-line"></i> Portföy Genel Özeti (Dashboard)
-        </a>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'calendar' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('calendar'); }}
+        </NavLink>
+        <NavLink
+          to="/calendar"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-calendar-days"></i> Yenileme & Vade Takvimi
-        </a>
+        </NavLink>
 
         <div className="menu-label">PORTFÖY & MÜŞTERİ YÖNETİMİ</div>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'customers' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('customers'); }}
+        <NavLink
+          to="/customers"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-users"></i> Müşteri Listesi
-        </a>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'vehicles' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('vehicles'); }}
+        </NavLink>
+        <NavLink
+          to="/vehicles"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-car"></i> Kayıtlı Araçlar Portföyü
-        </a>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'fleet' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('fleet'); }}
+        </NavLink>
+        <NavLink
+          to="/fleet"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-truck-fleet"></i> Kurumsal Filo Yönetimi
-        </a>
+        </NavLink>
 
         <div className="menu-label">SİGORTA & OPERASYON</div>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'policies' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('policies'); }}
+        <NavLink
+          to="/policies"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-file-contract"></i>  Poliçe Portföyü
-        </a>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'add-policy' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('add-policy'); }}
+        </NavLink>
+        <NavLink
+          to="/add-policy"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-file-import"></i> Poliçe İçe Aktarma
-        </a>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'workorders' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('workorders'); }}
+        </NavLink>
+        <NavLink
+          to="/workorders"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-car-burst"></i> Hasar & Dosya Takibi
-        </a>
+        </NavLink>
 
         <div className="menu-label">SATIŞ & FİNANS</div>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'quotes' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('quotes'); }}
+        <NavLink
+          to="/quotes"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-tags"></i> Teklifler & Karşılaştırmalar
-        </a>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'billing' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('billing'); }}
+        </NavLink>
+        <NavLink
+          to="/billing"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-credit-card"></i> Komisyon & Prim / Fatura Takibi
-        </a>
+        </NavLink>
 
         <div className="menu-label">OTOMASYON</div>
-        <a
-          href="#"
-          className={`menu-item ${activeMenu === 'reminders' ? 'active' : ''}`}
-          onClick={(e) => { e.preventDefault(); setActiveMenu('reminders'); }}
+        <NavLink
+          to="/reminders"
+          className={({ isActive }) => `menu-item ${isActive ? 'active' : ''}`}
+          onClick={onClose}
         >
           <i className="fa-solid fa-envelope-open-text"></i> Otomatik Vade Hatırlatıcıları
-        </a>
+        </NavLink>
       </nav>
 
     </aside>

@@ -408,12 +408,12 @@ services:
   # SERVICES — Web UI
   # ============================================
   web-ui:
-    image: nginx:alpine
+    build:
+      context: ./src/Web
+      dockerfile: Dockerfile
     container_name: sigortak-web-ui
     ports:
       - "80:80"
-    volumes:
-      - ./src/Web/dist:/usr/share/nginx/html
     networks:
       - sigortak-network
     restart: unless-stopped
