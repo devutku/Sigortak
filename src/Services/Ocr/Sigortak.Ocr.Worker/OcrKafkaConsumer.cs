@@ -3,6 +3,7 @@ using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Polly;
 using Sigortak.EventBus.Kafka;
 
 namespace Sigortak.Ocr.Worker;
@@ -91,27 +92,39 @@ public class OcrKafkaConsumer : BackgroundService
                         _logger.LogInformation("OCR icin belge indiriliyor: {Url}", fileUrl);
                         try
                         {
-                            using var stream = await _storageService.DownloadDocumentAsync(fileUrl, stoppingToken);
-                            var parsedData = _ocrParser.ParseDocument(stream);
+                            // Polly Retry Policy: MinIO indirme ve Kafka bildirim yayınlama işlemlerini 3 kez üstel gecikmeyle (2s, 4s, 8s) dener.
+                            await Policy
+                                .Handle<Exception>()
+                                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), 
+                                    (exception, timeSpan, retryCount, context) =>
+                                    {
+                                        _logger.LogWarning(exception, "OCR indirme/yayınlama hatası. {TimeSpan} sonra tekrar denenecek. (Deneme: {RetryCount}/3)", timeSpan, retryCount);
+                                    })
+                                .ExecuteAsync(async () =>
+                                {
+                                    using var stream = await _storageService.DownloadDocumentAsync(fileUrl, stoppingToken);
+                                    var parsedData = _ocrParser.ParseDocument(stream);
 
-                            _logger.LogInformation(
-                                "OCR BASARIYLA TAMAMLANDI! Belge: {Id}, Plaka: {Plate}, Sasi: {Chassis}, Tutar: {Premium} TL, Sirket: {Company}",
-                                documentId, parsedData.Plate, parsedData.ChassisNumber, parsedData.Premium, parsedData.InsuranceCompany);
+                                    _logger.LogInformation(
+                                        "OCR BASARIYLA TAMAMLANDI! Belge: {Id}, Plaka: {Plate}, Sasi: {Chassis}, Tutar: {Premium} TL, Sirket: {Company}",
+                                        documentId, parsedData.Plate, parsedData.ChassisNumber, parsedData.Premium, parsedData.InsuranceCompany);
 
-                            // Publish result to event bus
-                            var processedEvent = new DocumentOcrProcessedEvent(
-                                documentId,
-                                parsedData.Plate,
-                                parsedData.ChassisNumber,
-                                parsedData.Premium,
-                                parsedData.InsuranceCompany
-                            );
+                                    // Sonuclari Kafka'ya bas
+                                    var processedEvent = new DocumentOcrProcessedEvent(
+                                        documentId,
+                                        parsedData.Plate,
+                                        parsedData.ChassisNumber,
+                                        parsedData.Premium,
+                                        parsedData.InsuranceCompany
+                                    );
 
-                            await _eventBus.PublishAsync(processedEvent, stoppingToken);
+                                    await _eventBus.PublishAsync(processedEvent, stoppingToken);
+                                });
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, "OCR isleme sirasinda hata olustu. Belge: {Url}", fileUrl);
+                            _logger.LogError(ex, "OCR islemi sirasinda kalici hata olustu veya denemeler tukendi. Belge: {Id}", documentId);
+                            // Hatayi loglayip devam ediyoruz, Kafka'da commit etsin diye
                         }
                     }
                 }

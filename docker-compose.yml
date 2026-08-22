@@ -212,6 +212,7 @@ services:
       - EventBus__VirtualHost=sigortak
       - EventBus__Port=5672
       - Kafka__BootstrapServers=kafka:29092
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5001:5001"
     depends_on:
@@ -223,6 +224,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      seq:
+        condition: service_started
     networks:
       - sigortak-network
     restart: unless-stopped
@@ -253,6 +256,7 @@ services:
       - EventBus__Port=5672
       - Kafka__BootstrapServers=kafka:29092
       - Minio__Endpoint=http://minio:9000
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5002:5002"
     depends_on:
@@ -264,6 +268,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      seq:
+        condition: service_started
     networks:
       - sigortak-network
     restart: unless-stopped
@@ -283,6 +289,7 @@ services:
       - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
       - Kafka__BootstrapServers=kafka:29092
       - Minio__Endpoint=http://minio:9000
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5003:5003"
     depends_on:
@@ -292,6 +299,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      seq:
+        condition: service_started
     networks:
       - sigortak-network
     restart: unless-stopped
@@ -312,6 +321,7 @@ services:
       - Kafka__BootstrapServers=kafka:29092
       - Minio__Endpoint=http://minio:9000
       - PolicyService__Endpoint=http://policy-api:5003
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5005:5005"
     depends_on:
@@ -321,6 +331,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      seq:
+        condition: service_started
     networks:
       - sigortak-network
     restart: unless-stopped
@@ -338,11 +350,14 @@ services:
       - ASPNETCORE_URLS=http://+:5006
       - Kafka__BootstrapServers=kafka:29092
       - Minio__Endpoint=http://minio:9000
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5006:5006"
     depends_on:
       kafka:
         condition: service_healthy
+      seq:
+        condition: service_started
     networks:
       - sigortak-network
     restart: unless-stopped
@@ -361,6 +376,7 @@ services:
       - ConnectionStrings__WriteDb=Host=postgres-write;Port=5432;Database=sigortak_write_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD}
       - Kafka__BootstrapServers=kafka:29092
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5004:5004"
     depends_on:
@@ -370,6 +386,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      seq:
+        condition: service_started
     networks:
       - sigortak-network
     restart: unless-stopped
@@ -391,6 +409,7 @@ services:
       - ReverseProxy__Clusters__workorder-cluster__Destinations__workorder-api__Address=http://workorder-api:5004/
       - ReverseProxy__Clusters__quote-cluster__Destinations__quote-api__Address=http://quote-api:5005/
       - ReverseProxy__Clusters__ocr-cluster__Destinations__ocr-worker__Address=http://ocr-worker:5006/
+      - Seq__ServerUrl=http://sigortak-seq
     ports:
       - "5000:5000"
     depends_on:
@@ -400,6 +419,22 @@ services:
       - workorder-api
       - quote-api
       - ocr-worker
+      - seq
+    networks:
+      - sigortak-network
+    restart: unless-stopped
+
+  # ============================================
+  # OBSERVABILITY — Seq
+  # ============================================
+  seq:
+    image: datalust/seq:latest
+    container_name: sigortak-seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
+    ports:
+      - "5341:80"
     networks:
       - sigortak-network
     restart: unless-stopped

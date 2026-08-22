@@ -11,6 +11,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate:
         "[{Timestamp:HH:mm:ss} {Level:u3}] [GATEWAY] {Message:lj}{NewLine}{Exception}")
+    .WriteTo.Seq(Environment.GetEnvironmentVariable("Seq__ServerUrl") ?? "http://localhost:5341")
     .CreateLogger();
 
 try
@@ -73,8 +74,8 @@ try
         options.AddFixedWindowLimiter("api-limiter", opt =>
         {
             opt.Window = TimeSpan.FromSeconds(10);
-            opt.PermitLimit = 5; // Max 5 requests per 10 seconds for testing
-            opt.QueueLimit = 0; // Disable queue for testing so overflow is immediately rejected
+            opt.PermitLimit = 50; // Max 50 requests per 10 seconds
+            opt.QueueLimit = 10;
             opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         });
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
