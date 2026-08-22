@@ -119,7 +119,8 @@ Bu komut veritabanlarını, mesaj kuyruklarını, API servislerini ve web arayü
 | Servis / Panel | URL | Tanım / Kullanım |
 |----------------|-----|------------------|
 | **Sigortak Arayüzü** | [http://localhost](http://localhost) | React Portalı (Nginx üzerinde çalışır) |
-| **API Gateway** | [http://localhost:5000](http://localhost:5000) | YARP Reverse Proxy giriş kapısı |
+| **API Gateway** | [http://localhost:5000](http://localhost:5000) | YARP Reverse Proxy giriş kapısı (Kimlik Doğrulama & Hız Sınırlama) |
+| **Seq (Observability)** | [http://localhost:5341](http://localhost:5341) | Merkezi loglama ve dağıtık izleme (Trace/Correlation ID) paneli |
 | **pgAdmin 4** | [http://localhost:5050](http://localhost:5050) | Postgres Veritabanı Yönetimi |
 | **RabbitMQ Management** | [http://localhost:15672](http://localhost:15672) | Kuyruk durumu ve mesaj izleme (sigortak / sigortak) |
 | **Kafka UI** | [http://localhost:8090](http://localhost:8090) | Servisler arası Kafka event'lerini izleme |
@@ -174,6 +175,16 @@ docker-compose up -d --build [service-name]
 
 ---
 
-## 🔒 Güvenlik ve Multi-Tenancy
+## 🔒 Güvenlik, Hata Toleransı & İzlenebilirlik (Observability)
 
-Her istek, API Gateway üzerinden geçerek `Identity` servisinden doğrulanır ve HTTP Header'ına `TenantId` eklenerek mikroservislere yönlendirilir. Veritabanı düzeyinde, EF Core `HasQueryFilter` mekanizması kullanılarak hiçbir tenant'ın verisi bir diğerine sızdırılmaz.
+### 1. Gateway Üzerinde Güvenlik ve Hız Sınırlama (Authentication & Rate Limiting)
+- **Kimlik Doğrulama:** Gateway, downstream mikroservisleri korumak amacıyla merkezi JWT token doğrulamasını (`AuthorizationPolicy`) üstlenir. Yetkisiz istekler doğrudan `401 Unauthorized` ile Gateway seviyesinde engellenir.
+- **Hız Sınırlama (Rate Limiting):** İstek sıklığı kontrolü (`api-limiter`) ile API Gateway üzerinde saniyede belirli sayıda istek sınırı (Pencere başına 50 istek, kuyruk sınırı 10) uygulanır. Sınır aşımında istekler mikroservislere ulaştırılmadan doğrudan `429 Too Many Requests` olarak reddedilir.
+
+### 2. Hata Toleransı ve DLQ (Resilience & Dead Letter Queue)
+- **Polly Retry Policy:** Veritabanı kesintileri veya ağ gecikmeleri gibi geçici hatalarda mesaj kaybını önlemek için asenkron tüketicilerde (RabbitMQ ve Kafka) **3 kez üstel gecikmeli (2s, 4s, 8s)** yeniden deneme politikası çalıştırılır.
+- **Dead Letter Queue (DLQ):** Yeniden deneme limitleri aşıldığında veya deserialization hatası gibi kalıcı problemlerde mesajlar `BasicNack(requeue: false)` ile doğrudan `{QueueName}.dlq` adlı hata kuyruğuna aktarılır. Bu sayede ana işlem kuyruğunun tıkanması engellenir.
+
+### 3. Merkezi Loglama ve Dağıtık İzleme (Centralized Logging & Tracing)
+- **Merkezi Seq Entegrasyonu:** Tüm mikroservisler ve API Gateway loglarını HTTP protokolü üzerinden merkezi **Datalust Seq** (`http://localhost:5341`) sunucusuna gönderir.
+- **Dağıtık İstek Takibi:** İstekler API Gateway'den başlayarak mikroservislere ve asenkron kuyruk akışlarına kadar .NET'in yerleşik W3C `TraceId` standardı ile işaretlenir. Seq paneli üzerinden tek bir `TraceId` filtresi ile uçtan uca istek yaşam döngüsü (Gateway -> API -> EventBus -> Worker) görselleştirilebilir.
